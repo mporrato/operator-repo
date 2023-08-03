@@ -102,12 +102,37 @@ def do_check_bundle_image(bundle: Bundle) -> Iterator[Tuple[str, str]]:
     yield "fail", f"container image {container_image} not used by any deployment"
 
 
-def action_check_bundles(repo_path: Path, *what: str) -> None:
-    for bundle_name in what:
-        print(f"Checking {bundle_name}")
-        bundle = parse_target(Repo(repo_path), bundle_name)
-        for result, message in chain(do_check_bundle_image(bundle), do_check_bundle_operator_name(bundle)):
-            print(f"{result.upper()}: {message}")
+def action_check_bundle(repo_path: Path, bundle: Bundle) -> None:
+    for result, message in chain(do_check_bundle_image(bundle), do_check_bundle_operator_name(bundle)):
+        print(f"{result.upper()}: {message}")
+
+
+def do_check_operator_upgrade(operator: Operator) -> Iterator[Tuple[str, str]]:
+    all_channels = operator.channels | {operator.default_channel} - {None}
+    # all_bundles = set(operator)
+    for channel in sorted(all_channels):
+        channel_bundles = operator.channel_bundles(channel)
+        channel_head = operator.head(channel)
+        graph = operator.update_graph(channel)
+        dangling_bundles = {x for x in channel_bundles if x not in graph and x != channel_head}
+        if dangling_bundles:
+            yield "fail", f"Channel {channel} has dangling bundles: {dangling_bundles}"
+
+
+def action_check_operator(repo_path: Path, operator: Operator) -> None:
+    for result, message in do_check_operator_upgrade(operator):
+        print(f"{result.upper()}: {message}")
+
+
+def action_check(repo_path: Path, *what: str) -> None:
+    repo = Repo(repo_path)
+    for target_name in what:
+        target = parse_target(repo, target_name)
+        print(f"Checking {target}")
+        if isinstance(target, Operator):
+            action_check_operator(repo_path, target)
+        elif isinstance(target, Bundle):
+            action_check_bundle(repo_path, operator)
 
 
 def main() -> None:
@@ -136,13 +161,13 @@ def main() -> None:
     )
 
     # check_bundle
-    check_bundle_parser = main_subparsers.add_parser(
-        "check-bundle", help="check validity of a bundle"
+    check_parser = main_subparsers.add_parser(
+        "check", help="check validity of an operator or bundle"
     )
-    check_bundle_parser.add_argument(
+    check_parser.add_argument(
         "target",
         nargs="*",
-        help="name of the bundles to check",
+        help="name of the operators or bundles to check",
     )
 
     args = main_parser.parse_args()
@@ -159,8 +184,8 @@ def main() -> None:
 
     if args.action == "list":
         action_list(args.repo or Path.cwd(), *args.target, recursive=args.recursive)
-    elif args.action == "check-bundle":
-        action_check_bundles(args.repo or Path.cwd(), *args.target)
+    elif args.action == "check":
+        action_check(args.repo or Path.cwd(), *args.target)
     else:
         main_parser.print_help()
 
