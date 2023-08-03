@@ -9,6 +9,8 @@ from itertools import chain
 from pathlib import Path
 from typing import Union, Dict, Any, Iterator, Tuple
 
+from semver import Version
+
 from operator_repo.classes import Bundle, Operator, Repo
 
 
@@ -49,6 +51,8 @@ def _list(
             ("Channels", ", ".join(target.channels)),
             ("Default channel", target.default_channel),
             ("Container image", csv_annotations.get("containerImage", "")),
+            ("Replaces", target.csv.get("spec", {}).get("replaces", "")),
+            ("Skips", target.csv.get("spec", {}).get("skips", [])),
         ]
         max_width = max([len(key) for key, _ in info])
         for key, value in info:
@@ -65,7 +69,9 @@ def action_list(repo_path, *what: str, recursive: bool = False) -> None:
             _list(parse_target(repo, target), recursive)
 
 
-def lookup_dict(data: Dict[str, Any], path: str, default: Any = None, separator: str = '.') -> Any:
+def lookup_dict(
+    data: Dict[str, Any], path: str, default: Any = None, separator: str = "."
+) -> Any:
     keys = path.split(separator)
     subtree = data
     for key in keys:
@@ -81,58 +87,83 @@ def do_check_bundle_operator_name(bundle: Bundle) -> Iterator[Tuple[str, str]]:
         yield "fail", "Bundle does not define the operator name in annotations.yaml"
         return
     if name != bundle.csv_operator_name:
-        yield "fail", "Operator name from annotations.yaml does not match the name defined in the CSV"
+        yield "fail", f"Operator name from annotations.yaml ({name}) does not match the name defined in the CSV ({bundle.csv_operator_name})"
     if name != bundle.operator_name:
-        yield "fail", "Operator name from annotations.yaml does not match the operator's directory name"
+        yield "warn", f"Operator name from annotations.yaml ({name}) does not match the operator's directory name ({bundle.operator_name})"
 
 
 def do_check_bundle_image(bundle: Bundle) -> Iterator[Tuple[str, str]]:
-    container_image = lookup_dict(bundle.csv, "metadata.annotations.containerImage")
-    if container_image is None:
-        yield "fail", "CSV doesn't define .metadata.annotations.containerImage"
-        return
-    deployments = lookup_dict(bundle.csv, "spec.install.spec.deployments")
-    if deployments is None:
-        yield "fail", "CSV doesn't define .spec.install.spec.deployments"
-        return
-    for deployment in deployments:
-        containers = lookup_dict(deployment, "spec.template.spec.containers", [])
-        if any(container_image == x.get("image") for x in containers):
+    try:
+        container_image = lookup_dict(bundle.csv, "metadata.annotations.containerImage")
+        if container_image is None:
+            yield "fail", "CSV doesn't define .metadata.annotations.containerImage"
             return
-    yield "fail", f"container image {container_image} not used by any deployment"
+        deployments = lookup_dict(bundle.csv, "spec.install.spec.deployments")
+        if deployments is None:
+            yield "fail", "CSV doesn't define .spec.install.spec.deployments"
+            return
+        for deployment in deployments:
+            containers = lookup_dict(deployment, "spec.template.spec.containers", [])
+            if any(container_image == x.get("image") for x in containers):
+                return
+        yield "fail", f"container image {container_image} not used by any deployment"
+    except Exception as e:
+        yield "fail", str(e)
 
 
-def action_check_bundle(repo_path: Path, bundle: Bundle) -> None:
-    for result, message in chain(do_check_bundle_image(bundle), do_check_bundle_operator_name(bundle)):
-        print(f"{result.upper()}: {message}")
+def do_check_bundle_semver(bundle: Bundle) -> Iterator[Tuple[str, str]]:
+    try:
+        _ = Version.parse(bundle.operator_version)
+    except ValueError:
+        yield "warn", f"Version from filesystem ({bundle.operator_version}) is not valid semver"
+    try:
+        _ = Version.parse(bundle.csv_operator_version)
+    except ValueError:
+        yield "warn", f"Version from CSV ({bundle.csv_operator_version}) is not valid semver"
+
+
+def action_check_bundle(bundle: Bundle) -> None:
+    for result, message in chain(
+        do_check_bundle_semver(bundle),
+        do_check_bundle_operator_name(bundle),
+        do_check_bundle_image(bundle),
+    ):
+        print(f"{result.upper()}: {bundle}: {message}")
 
 
 def do_check_operator_upgrade(operator: Operator) -> Iterator[Tuple[str, str]]:
     all_channels = operator.channels | {operator.default_channel} - {None}
-    # all_bundles = set(operator)
     for channel in sorted(all_channels):
-        channel_bundles = operator.channel_bundles(channel)
-        channel_head = operator.head(channel)
-        graph = operator.update_graph(channel)
-        dangling_bundles = {x for x in channel_bundles if x not in graph and x != channel_head}
-        if dangling_bundles:
-            yield "fail", f"Channel {channel} has dangling bundles: {dangling_bundles}"
+        try:
+            channel_bundles = operator.channel_bundles(channel)
+            channel_head = operator.head(channel)
+            graph = operator.update_graph(channel)
+            dangling_bundles = {
+                x for x in channel_bundles if x not in graph and x != channel_head
+            }
+            if dangling_bundles:
+                yield "fail", f"Channel {channel} has dangling bundles: {dangling_bundles}."
+        except Exception as e:
+            yield "fail", str(e)
 
 
-def action_check_operator(repo_path: Path, operator: Operator) -> None:
+def action_check_operator(operator: Operator) -> None:
     for result, message in do_check_operator_upgrade(operator):
-        print(f"{result.upper()}: {message}")
+        print(f"{result.upper()}: {operator}: {message}")
 
 
-def action_check(repo_path: Path, *what: str) -> None:
+def action_check(repo_path: Path, *what: str, recursive: bool = False) -> None:
     repo = Repo(repo_path)
-    for target_name in what:
-        target = parse_target(repo, target_name)
+    for target in [parse_target(repo, x) for x in what] or sorted(repo):
         print(f"Checking {target}")
         if isinstance(target, Operator):
-            action_check_operator(repo_path, target)
+            action_check_operator(target)
+            if recursive:
+                for bundle in sorted(target):
+                    print(f"Checking {bundle}")
+                    action_check_bundle(bundle)
         elif isinstance(target, Bundle):
-            action_check_bundle(repo_path, operator)
+            action_check_bundle(target)
 
 
 def main() -> None:
@@ -149,7 +180,7 @@ def main() -> None:
 
     # list
     list_parser = main_subparsers.add_parser(
-        "list", help="list contents of repo, operators or bundles"
+        "list", aliases=["ls"], help="list contents of repo, operators or bundles"
     )
     list_parser.add_argument(
         "-R", "--recursive", action="store_true", help="descend the tree"
@@ -162,7 +193,11 @@ def main() -> None:
 
     # check_bundle
     check_parser = main_subparsers.add_parser(
-        "check", help="check validity of an operator or bundle"
+        "check",
+        help="check validity of an operator or bundle",
+    )
+    check_parser.add_argument(
+        "-R", "--recursive", action="store_true", help="descend the tree"
     )
     check_parser.add_argument(
         "target",
@@ -182,10 +217,10 @@ def main() -> None:
     )
     log.addHandler(handler)
 
-    if args.action == "list":
+    if args.action in ("list", "ls"):
         action_list(args.repo or Path.cwd(), *args.target, recursive=args.recursive)
     elif args.action == "check":
-        action_check(args.repo or Path.cwd(), *args.target)
+        action_check(args.repo or Path.cwd(), *args.target, recursive=args.recursive)
     else:
         main_parser.print_help()
 

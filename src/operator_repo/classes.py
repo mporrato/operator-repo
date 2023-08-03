@@ -68,7 +68,7 @@ class Bundle:
         try:
             csv_full_name = self.csv["metadata"]["name"]
             name, version = csv_full_name.split(".", 1)
-            return name, version.lstrip('v')
+            return name, version.lstrip("v")
         except (KeyError, ValueError) as exc:
             raise InvalidBundleException(
                 f"CSV for {self} has invalid .metadata.name"
@@ -131,7 +131,9 @@ class Bundle:
         """
         for suffix in ["yaml", "yml"]:
             try:
-                return next(self._manifests_path.glob(f"*.clusterserviceversion.{suffix}"))
+                return next(
+                    self._manifests_path.glob(f"*.clusterserviceversion.{suffix}")
+                )
             except StopIteration:
                 continue
         raise InvalidBundleException(
@@ -195,7 +197,8 @@ class Bundle:
                 f" and '{other.__class__.__name__}"
             )
         if self.csv_operator_name != other.csv_operator_name:
-            raise ValueError("Can't compare bundles from different operators")
+            # raise ValueError("Can't compare bundles from different operators")
+            return self.csv_operator_name < other.csv_operator_name
         try:
             return Version.parse(self.csv_operator_version.lstrip("v")) < Version.parse(
                 other.csv_operator_version.lstrip("v")
@@ -314,6 +317,21 @@ class Operator:
             )[-1][1]
         except IndexError:
             return None
+        except ValueError:
+            log.warning("%s: A bundle has non-semver compliant version: using lexical order to determine default channel", self)
+            try:
+                return sorted(
+                    [
+                        (
+                            x.csv_operator_version,
+                            x.default_channel,
+                        )
+                        for x in self.all_bundles()
+                        if x.default_channel is not None
+                    ]
+                )[-1][1]
+            except IndexError:
+                return None
 
     def channel_bundles(self, channel: str) -> List[Bundle]:
         """
@@ -347,13 +365,11 @@ class Operator:
             edges: Dict[Bundle, set[Bundle]] = {}
             all_bundles_set = set(all_bundles)
             for bundle in all_bundles_set:
-                try:
-                    spec = bundle.csv["spec"]
-                except KeyError:
-                    continue
+                spec = bundle.csv.get("spec", {})
                 replaces = spec.get("replaces")
                 skips = spec.get("skips", [])
-                for replaced_bundle_name in skips + [replaces]:
+                previous = set(skips) | {replaces}
+                for replaced_bundle_name in previous:
                     if replaced_bundle_name is None:
                         continue
                     if ".v" not in replaced_bundle_name:
@@ -372,7 +388,11 @@ class Operator:
                         replaced_bundle = self.bundle(
                             replaced_bundle_version.lstrip("v")
                         )
-                        edges.setdefault(replaced_bundle, set()).add(bundle)
+                        if (
+                            channel in bundle.channels
+                            and channel in replaced_bundle.channels
+                        ):
+                            edges.setdefault(replaced_bundle, set()).add(bundle)
                     except InvalidBundleException:
                         pass
             return edges

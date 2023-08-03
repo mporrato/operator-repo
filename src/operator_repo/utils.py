@@ -7,6 +7,9 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from yaml.composer import ComposerError
+
+from operator_repo.exceptions import OperatorRepoException
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +36,10 @@ def _load_yaml_strict(path: Path) -> Any:
 
     log.debug("Loading %s", path)
     with path.open("r") as yaml_file:
-        return yaml.safe_load(yaml_file)
+        try:
+            return yaml.safe_load(yaml_file)
+        except ComposerError:
+            raise OperatorRepoException(f"{path} contains multiple yaml documents")
 
 
 def load_yaml(path: Path) -> Any:

@@ -43,8 +43,7 @@ def test_bundle_compare(tmp_path: Path) -> None:
     assert hello_bundle_1 != hello_bundle_2
     assert hello_bundle_1 < hello_bundle_2
     assert hello_bundle_1 != world_bundle_1
-    with pytest.raises(ValueError):
-        _ = hello_bundle_1 < world_bundle_1
+    assert hello_bundle_1 < world_bundle_1
 
 
 def test_bundle_non_semver(tmp_path: Path) -> None:
