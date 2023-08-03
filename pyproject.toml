@@ -1,0 +1,34 @@
+[project]
+name = "operator_repo"
+version = "0.1.0"
+description = "Library and utilities to handle repositories of kubernetes operators"
+authors = [
+    {name = "Maurizio Porrato", email = "mporrato@redhat.com"},
+]
+dependencies = [
+    "pyyaml>=6.0.1",
+    "semver>=3.0.1",
+]
+requires-python = ">=3.7"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+
+[project.scripts]
+optool = "operator_repo.cli:main"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm.dev-dependencies]
+test = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "tox-pdm>=0.6.1",
+]
+lint = [
+    "black>=23.3.0",
+    "isort>=5.11.5",
+    "pylint>=2.13.9",
+    "types-PyYAML>=6.0.12.11",
+]
