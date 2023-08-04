@@ -88,6 +88,10 @@ def test_bundle_invalid(tmp_path: Path) -> None:
             },
             "operators/missing_csv/0.0.1/manifests": None,
         },
+        bundle_files("one_empty_bundle", "0.0.1"),
+        {
+            "operators/one_empty_bundle/0.0.2": None,
+        },
     )
     repo = Repo(tmp_path)
     with pytest.raises(InvalidBundleException, match="has invalid .metadata.name"):
@@ -106,3 +110,4 @@ def test_bundle_invalid(tmp_path: Path) -> None:
     assert repo.has("missing_csv")
     with pytest.raises(InvalidBundleException, match="CSV file for .* not found"):
         _ = repo.operator("missing_csv").bundle("0.0.1").csv_operator_name
+    assert list(repo.operator("one_empty_bundle")) == [repo.operator("one_empty_bundle").bundle("0.0.1")]
