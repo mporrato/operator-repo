@@ -304,34 +304,31 @@ class Operator:
         :return: Default channel as defined in
         https://github.com/operator-framework/operator-registry/blob/master/docs/design/opm-tooling.md
         """
+        # The default channel for an operator is defined as the default
+        # channel of the highest bundle version
+        version_channel_pairs = [
+            (
+                x.csv_operator_version,
+                x.default_channel,
+            )
+            for x in self.all_bundles()
+            if x.default_channel is not None
+        ]
+
         try:
-            return sorted(
-                [
-                    (
-                        Version.parse(x.csv_operator_version.lstrip("v")),
-                        x.default_channel,
-                    )
-                    for x in self.all_bundles()
-                    if x.default_channel is not None
-                ]
-            )[-1][1]
+            version_channel_pairs = [
+                (Version.parse(x), y) for x, y in version_channel_pairs
+            ]
+        except ValueError:
+            log.warning(
+                "%s has bundles with non-semver compliant version:"
+                " using lexical order to determine default channel",
+                self,
+            )
+        try:
+            return sorted(version_channel_pairs)[-1][1]
         except IndexError:
             return None
-        except ValueError:
-            log.warning("%s: A bundle has non-semver compliant version: using lexical order to determine default channel", self)
-            try:
-                return sorted(
-                    [
-                        (
-                            x.csv_operator_version,
-                            x.default_channel,
-                        )
-                        for x in self.all_bundles()
-                        if x.default_channel is not None
-                    ]
-                )[-1][1]
-            except IndexError:
-                return None
 
     def channel_bundles(self, channel: str) -> List[Bundle]:
         """
