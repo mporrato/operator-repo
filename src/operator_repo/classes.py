@@ -96,11 +96,11 @@ class Bundle:
         )
 
     @property
-    def root(self) -> str:
+    def root(self) -> Path:
         """
         :return: The path to the root of the bundle
         """
-        return str(self._bundle_path)
+        return self._bundle_path
 
     def operator(self) -> "Operator":
         """
@@ -232,6 +232,7 @@ class Operator:
                 f"Not a valid operator: {self._operator_path}"
             )
         self.operator_name = self._operator_path.name
+        self._bundle_cache = {}
 
     @cached_property
     def config(self) -> Any:
@@ -252,19 +253,22 @@ class Operator:
         return path.is_dir() and any(Bundle.probe(x) for x in path.iterdir())
 
     @property
-    def root(self) -> str:
+    def root(self) -> Path:
         """
         :return: The path to the root of the operator
         """
-        return str(self._operator_path)
+        return self._operator_path
 
     def all_bundles(self) -> Iterator[Bundle]:
         """
         :return: All the bundles for the operator
         """
         for version_path in self._operator_path.iterdir():
-            if Bundle.probe(version_path):
-                yield self.bundle(version_path.name)
+            try:
+                yield self._bundle_cache[version_path.name]
+            except KeyError:
+                if Bundle.probe(version_path):
+                    yield self.bundle(version_path.name)
 
     def bundle_path(self, operator_version: str) -> Path:
         """
@@ -281,7 +285,12 @@ class Operator:
         :param operator_version: Version of the bundle
         :return: The loaded bundle
         """
-        return Bundle(self.bundle_path(operator_version))
+        try:
+            return self._bundle_cache[operator_version]
+        except KeyError:
+            bundle = Bundle(self.bundle_path(operator_version))
+            self._bundle_cache[operator_version] = bundle
+            return bundle
 
     def has(self, operator_version: str) -> bool:
         """
@@ -439,6 +448,7 @@ class Repo:
                 f"Not a valid operator repository: {self._repo_path}"
             )
         self._operators_path = self._repo_path / self.OPERATORS_DIR
+        self._operator_cache = {}
 
     @cached_property
     def config(self) -> Any:
@@ -459,19 +469,22 @@ class Repo:
         return path.is_dir() and (path / cls.OPERATORS_DIR).is_dir()
 
     @property
-    def root(self) -> str:
+    def root(self) -> Path:
         """
         :return: The path to the root of the repository
         """
-        return str(self._repo_path)
+        return self._repo_path
 
     def all_operators(self) -> Iterator[Operator]:
         """
         :return: All the operators in the repo
         """
         for operator_path in self._operators_path.iterdir():
-            if Operator.probe(operator_path):
-                yield self.operator(operator_path.name)
+            try:
+                yield self._operator_cache[operator_path.name]
+            except KeyError:
+                if Operator.probe(operator_path):
+                    yield self.operator(operator_path.name)
 
     def operator_path(self, operator_name: str) -> Path:
         """
@@ -488,7 +501,12 @@ class Repo:
         :param operator_name: Name of the operator
         :return: The loaded operator
         """
-        return Operator(self.operator_path(operator_name))
+        try:
+            return self._operator_cache[operator_name]
+        except KeyError:
+            operator = Operator(self.operator_path(operator_name))
+            self._operator_cache[operator_name] = operator
+            return operator
 
     def has(self, operator_name: str) -> bool:
         """
@@ -496,7 +514,9 @@ class Repo:
         :param operator_name: Name of the operator to look for
         :return: True if the repo contains an operator with the given name
         """
-        return Operator.probe(self.operator_path(operator_name))
+        return operator_name in self._operator_cache or Operator.probe(
+            self.operator_path(operator_name)
+        )
 
     def __iter__(self) -> Iterator[Operator]:
         yield from self.all_operators()

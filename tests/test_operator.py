@@ -21,7 +21,7 @@ def test_operator_one_bundle(tmp_path: Path) -> None:
     assert bundle.operator() == operator
     assert operator.config == {}
     assert bundle.dependencies == []
-    assert operator.root == repo.root + "/operators/hello"
+    assert operator.root == repo.root / "operators" / "hello"
     assert "hello" in repr(operator)
 
 

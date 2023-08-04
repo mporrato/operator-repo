@@ -27,7 +27,7 @@ def test_repo_no_operators(tmp_path: Path) -> None:
     repo = Repo(tmp_path)
     assert len(list(repo)) == 0
     assert repo.config == {"hello": "world"}
-    assert repo.root == str(tmp_path.resolve())
+    assert repo.root == tmp_path.resolve()
     assert str(tmp_path) in repr(repo)
 
 

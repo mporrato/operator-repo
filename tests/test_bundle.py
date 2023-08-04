@@ -14,7 +14,7 @@ def test_bundle(tmp_path: Path) -> None:
     repo = Repo(tmp_path)
     operator = repo.operator("hello")
     bundle = operator.bundle("0.0.1")
-    assert bundle.root == operator.root + "/0.0.1"
+    assert bundle.root == operator.root / "0.0.1"
     assert bundle.csv_operator_name == "hello"
     assert bundle.csv_operator_version == "0.0.1"
     assert (
@@ -94,7 +94,7 @@ def test_bundle_invalid(tmp_path: Path) -> None:
         _ = repo.operator("invalid_csv_name").bundle("0.0.1").csv_operator_name
     assert not repo.has("missing_manifests")
     with pytest.raises(InvalidBundleException, match="Not a valid bundle"):
-        _ = Bundle(repo.root + "/operators/missing_manifests/0.0.1")
+        _ = Bundle(repo.root / "operators" / "missing_manifests" / "0.0.1")
     with pytest.raises(InvalidOperatorException, match="Not a valid operator"):
         _ = repo.operator("missing_manifests")
     assert repo.has("invalid_csv_contents")
