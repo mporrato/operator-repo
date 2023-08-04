@@ -298,7 +298,9 @@ class Operator:
         :param operator_version: Version to check for
         :return: True if the operator contains a bundle for such version
         """
-        return Bundle.probe(self.bundle_path(operator_version))
+        return operator_version in self._bundle_cache or Bundle.probe(
+            self.bundle_path(operator_version)
+        )
 
     @cached_property
     def channels(self) -> Set[str]:
