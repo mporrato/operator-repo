@@ -18,7 +18,7 @@ def test_operator_one_bundle(tmp_path: Path) -> None:
     assert len(list(operator)) == 1
     assert set(operator) == {bundle}
     assert operator.has("0.0.1")
-    assert bundle.operator() == operator
+    assert bundle.operator == operator
     assert operator.config == {}
     assert bundle.dependencies == []
     assert operator.root == repo.root / "operators" / "hello"

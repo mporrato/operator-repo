@@ -29,7 +29,7 @@ class Bundle:
     METADATA_DIR = "metadata"
     MANIFESTS_DIR = "manifests"
 
-    def __init__(self, bundle_path: Union[str, Path]):
+    def __init__(self, bundle_path: Union[str, Path], operator: Optional["Operator"] = None):
         log.debug("Loading bundle at %s", bundle_path)
         self._bundle_path = Path(bundle_path).resolve()
         if not self.probe(self._bundle_path):
@@ -38,6 +38,7 @@ class Bundle:
         self.operator_name = self._bundle_path.parent.name
         self._manifests_path = self._bundle_path / self.MANIFESTS_DIR
         self._metadata_path = self._bundle_path / self.METADATA_DIR
+        self._parent = operator
 
     @cached_property
     def annotations(self) -> Dict[str, Any]:
@@ -102,10 +103,13 @@ class Bundle:
         """
         return self._bundle_path
 
+    @property
     def operator(self) -> "Operator":
         """
         :return: The operator the bundle belongs to
         """
+        if self._parent is not None:
+            return self._parent
         return Operator(self._bundle_path.parent)
 
     def load_metadata(self, filename: str) -> Dict[str, Any]:
@@ -224,7 +228,7 @@ class Bundle:
 class Operator:
     """An operator containing a collection of bundles"""
 
-    def __init__(self, operator_path: Union[str, Path]):
+    def __init__(self, operator_path: Union[str, Path], repo: Optional["Repo"] = None):
         log.debug("Loading operator at %s", operator_path)
         self._operator_path = Path(operator_path).resolve()
         if not self.probe(self._operator_path):
@@ -232,6 +236,7 @@ class Operator:
                 f"Not a valid operator: {self._operator_path}"
             )
         self.operator_name = self._operator_path.name
+        self._parent = repo
         self._bundle_cache = {}
 
     @cached_property
@@ -258,6 +263,12 @@ class Operator:
         :return: The path to the root of the operator
         """
         return self._operator_path
+
+    @property
+    def repo(self) -> "Repo":
+        if self._parent is not None:
+            return self._parent
+        return Repo(self._operator_path.parent.parent)
 
     def all_bundles(self) -> Iterator[Bundle]:
         """
@@ -288,7 +299,7 @@ class Operator:
         try:
             return self._bundle_cache[operator_version]
         except KeyError:
-            bundle = Bundle(self.bundle_path(operator_version))
+            bundle = Bundle(self.bundle_path(operator_version), self)
             self._bundle_cache[operator_version] = bundle
             return bundle
 
@@ -506,7 +517,7 @@ class Repo:
         try:
             return self._operator_cache[operator_name]
         except KeyError:
-            operator = Operator(self.operator_path(operator_name))
+            operator = Operator(self.operator_path(operator_name), self)
             self._operator_cache[operator_name] = operator
             return operator
 
