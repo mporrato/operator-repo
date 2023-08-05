@@ -29,7 +29,9 @@ class Bundle:
     METADATA_DIR = "metadata"
     MANIFESTS_DIR = "manifests"
 
-    def __init__(self, bundle_path: Union[str, Path], operator: Optional["Operator"] = None):
+    def __init__(
+        self, bundle_path: Union[str, Path], operator: Optional["Operator"] = None
+    ):
         log.debug("Loading bundle at %s", bundle_path)
         self._bundle_path = Path(bundle_path).resolve()
         if not self.probe(self._bundle_path):
@@ -383,6 +385,12 @@ class Operator:
         if update_strategy == "replaces-mode":
             edges: Dict[Bundle, set[Bundle]] = {}
             all_bundles_set = set(all_bundles)
+            operator_names = {x.csv_operator_name for x in all_bundles_set}
+            if len(operator_names) != 1:
+                raise ValueError(
+                    f"{self} has bundles with different operator names: {operator_names}"
+                )
+            version_to_bundle = {x.csv_operator_version: x for x in all_bundles_set}
             for bundle in all_bundles_set:
                 spec = bundle.csv.get("spec", {})
                 replaces = spec.get("replaces")
@@ -404,15 +412,15 @@ class Operator:
                             f"{self}: {bundle} replaces a bundle from a different operator"
                         )
                     try:
-                        replaced_bundle = self.bundle(
+                        replaced_bundle = version_to_bundle[
                             replaced_bundle_version.lstrip("v")
-                        )
+                        ]
                         if (
                             channel in bundle.channels
                             and channel in replaced_bundle.channels
                         ):
                             edges.setdefault(replaced_bundle, set()).add(bundle)
-                    except InvalidBundleException:
+                    except KeyError:
                         pass
             return edges
         raise ValueError(f"{self}: unknown updateGraph value: {update_strategy}")
