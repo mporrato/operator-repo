@@ -5,7 +5,7 @@
 import logging
 from functools import cached_property, total_ordering
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Set, Union, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
 
 from semver import Version
 
@@ -110,9 +110,9 @@ class Bundle:
         """
         :return: The operator the bundle belongs to
         """
-        if self._parent is not None:
-            return self._parent
-        return Operator(self._bundle_path.parent)
+        if self._parent is None:
+            self._parent = Operator(self._bundle_path.parent)
+        return self._parent
 
     def load_metadata(self, filename: str) -> Dict[str, Any]:
         """
@@ -268,9 +268,9 @@ class Operator:
 
     @property
     def repo(self) -> "Repo":
-        if self._parent is not None:
-            return self._parent
-        return Repo(self._operator_path.parent.parent)
+        if self._parent is None:
+            self._parent = Repo(self._operator_path.parent.parent)
+        return self._parent
 
     def all_bundles(self) -> Iterator[Bundle]:
         """

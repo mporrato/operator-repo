@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+
 from operator_repo.utils import load_yaml
 from tests import create_files
 

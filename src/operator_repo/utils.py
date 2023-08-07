@@ -4,13 +4,13 @@
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict
 
 import yaml
 from yaml.composer import ComposerError
-
-from operator_repo.exceptions import OperatorRepoException
 from yaml.parser import ParserError
+
+from .exceptions import OperatorRepoException
 
 log = logging.getLogger(__name__)
 
@@ -48,3 +48,15 @@ def _load_yaml_strict(path: Path) -> Any:
 def load_yaml(path: Path) -> Any:
     """Same as _load_yaml_strict but tries both .yaml and .yml extensions"""
     return _load_yaml_strict(_find_yaml(path))
+
+
+def lookup_dict(
+    data: Dict[str, Any], path: str, default: Any = None, separator: str = "."
+) -> Any:
+    keys = path.split(separator)
+    subtree = data
+    for key in keys:
+        if key not in subtree:
+            return default
+        subtree = subtree[key]
+    return subtree

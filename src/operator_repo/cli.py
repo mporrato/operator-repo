@@ -5,13 +5,13 @@
 
 import argparse
 import logging
-from itertools import chain
+from inspect import getmembers, isfunction
 from pathlib import Path
-from typing import Union, Dict, Any, Iterator, Tuple
+from typing import Union
 
-from semver import Version
-
-from operator_repo.classes import Bundle, Operator, Repo
+from .checks import bundle as bundle_checks
+from .checks import operator as operator_checks
+from .classes import Bundle, Operator, Repo
 
 
 def parse_target(repo: Repo, target: str) -> Union[Operator, Bundle]:
@@ -69,98 +69,29 @@ def action_list(repo_path, *what: str, recursive: bool = False) -> None:
             _list(parse_target(repo, target), recursive)
 
 
-def lookup_dict(
-    data: Dict[str, Any], path: str, default: Any = None, separator: str = "."
-) -> Any:
-    keys = path.split(separator)
-    subtree = data
-    for key in keys:
-        if key not in subtree:
-            return default
-        subtree = subtree[key]
-    return subtree
-
-
-def do_check_bundle_operator_name(bundle: Bundle) -> Iterator[Tuple[str, str]]:
-    name = bundle.annotations.get("operators.operatorframework.io.bundle.package.v1")
-    if name is None:
-        yield "fail", "Bundle does not define the operator name in annotations.yaml"
-        return
-    if name != bundle.csv_operator_name:
-        yield "fail", f"Operator name from annotations.yaml ({name}) does not match the name defined in the CSV ({bundle.csv_operator_name})"
-    if name != bundle.operator_name:
-        yield "warn", f"Operator name from annotations.yaml ({name}) does not match the operator's directory name ({bundle.operator_name})"
-
-
-def do_check_bundle_image(bundle: Bundle) -> Iterator[Tuple[str, str]]:
-    try:
-        container_image = lookup_dict(bundle.csv, "metadata.annotations.containerImage")
-        if container_image is None:
-            yield "fail", "CSV doesn't define .metadata.annotations.containerImage"
-            return
-        deployments = lookup_dict(bundle.csv, "spec.install.spec.deployments")
-        if deployments is None:
-            yield "fail", "CSV doesn't define .spec.install.spec.deployments"
-            return
-        for deployment in deployments:
-            containers = lookup_dict(deployment, "spec.template.spec.containers", [])
-            if any(container_image == x.get("image") for x in containers):
-                return
-        yield "fail", f"container image {container_image} not used by any deployment"
-    except Exception as e:
-        yield "fail", str(e)
-
-
-def do_check_bundle_semver(bundle: Bundle) -> Iterator[Tuple[str, str]]:
-    try:
-        _ = Version.parse(bundle.operator_version)
-    except ValueError:
-        yield "warn", f"Version from filesystem ({bundle.operator_version}) is not valid semver"
-    try:
-        _ = Version.parse(bundle.csv_operator_version)
-    except ValueError:
-        yield "warn", f"Version from CSV ({bundle.csv_operator_version}) is not valid semver"
-
-
 def action_check_bundle(bundle: Bundle) -> None:
-    for result, message in chain(
-        do_check_bundle_semver(bundle),
-        do_check_bundle_operator_name(bundle),
-        do_check_bundle_image(bundle),
-    ):
-        print(f"{result.upper()}: {bundle}: {message}")
-
-
-def do_check_operator_upgrade(operator: Operator) -> Iterator[Tuple[str, str]]:
-    all_channels = operator.channels | {operator.default_channel} - {None}
-    for channel in sorted(all_channels):
-        try:
-            channel_bundles = operator.channel_bundles(channel)
-            channel_head = operator.head(channel)
-            graph = operator.update_graph(channel)
-            dangling_bundles = {
-                x for x in channel_bundles if x not in graph and x != channel_head
-            }
-            if dangling_bundles:
-                yield "fail", f"Channel {channel} has dangling bundles: {dangling_bundles}."
-        except Exception as e:
-            yield "fail", str(e)
+    print(f"Checking {bundle}")
+    for check_name, check in getmembers(bundle_checks, isfunction):
+        if check_name.startswith("check_"):
+            for result, message in check(bundle):
+                print(f"{result.upper()}: {bundle}: {message}")
 
 
 def action_check_operator(operator: Operator) -> None:
-    for result, message in do_check_operator_upgrade(operator):
-        print(f"{result.upper()}: {operator}: {message}")
+    print(f"Checking {operator}")
+    for check_name, check in getmembers(operator_checks, isfunction):
+        if check_name.startswith("check_"):
+            for result, message in check(operator):
+                print(f"{result.upper()}: {operator}: {message}")
 
 
 def action_check(repo_path: Path, *what: str, recursive: bool = False) -> None:
     repo = Repo(repo_path)
     for target in [parse_target(repo, x) for x in what] or sorted(repo):
-        print(f"Checking {target}")
         if isinstance(target, Operator):
             action_check_operator(target)
             if recursive:
                 for bundle in sorted(target):
-                    print(f"Checking {bundle}")
                     action_check_bundle(bundle)
         elif isinstance(target, Bundle):
             action_check_bundle(target)

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+
 from operator_repo import Repo
 from operator_repo.exceptions import InvalidRepoException
 from tests import bundle_files, create_files
