@@ -97,6 +97,18 @@ def action_check(repo_path: Path, *what: str, recursive: bool = False) -> None:
             action_check_bundle(target)
 
 
+def action_check_list() -> None:
+    for check_type_name, check_type in (
+        ("Operator", operator_checks),
+        ("Bundle", bundle_checks),
+    ):
+        print(f"{check_type_name} checks:")
+        for check_name, check in getmembers(check_type, isfunction):
+            if check_name.startswith("check_"):
+                display_name = check_name.removeprefix("check_")
+                print(f" - {display_name}: {check.__doc__}")
+
+
 def main() -> None:
     main_parser = argparse.ArgumentParser(
         description="Operator repository manipulation tool",
@@ -128,6 +140,9 @@ def main() -> None:
         help="check validity of an operator or bundle",
     )
     check_parser.add_argument(
+        "--list", action="store_true", help="list available checks"
+    )
+    check_parser.add_argument(
         "-R", "--recursive", action="store_true", help="descend the tree"
     )
     check_parser.add_argument(
@@ -151,7 +166,12 @@ def main() -> None:
     if args.action in ("list", "ls"):
         action_list(args.repo or Path.cwd(), *args.target, recursive=args.recursive)
     elif args.action == "check":
-        action_check(args.repo or Path.cwd(), *args.target, recursive=args.recursive)
+        if args.list:
+            action_check_list()
+        else:
+            action_check(
+                args.repo or Path.cwd(), *args.target, recursive=args.recursive
+            )
     else:
         main_parser.print_help()
 

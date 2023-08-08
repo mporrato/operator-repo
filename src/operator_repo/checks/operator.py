@@ -4,6 +4,7 @@ from .. import Operator
 
 
 def check_upgrade(operator: Operator) -> Iterator[Tuple[str, str]]:
+    """Validate upgrade graphs for all channels"""
     all_channels = operator.channels | {operator.default_channel} - {None}
     for channel in sorted(all_channels):
         try:

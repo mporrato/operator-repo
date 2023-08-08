@@ -7,6 +7,7 @@ from ..utils import lookup_dict
 
 
 def check_operator_name(bundle: Bundle) -> Iterator[Tuple[str, str]]:
+    """Check if the operator names used in CSV, metadata and filesystem are consistent"""
     name = bundle.annotations.get("operators.operatorframework.io.bundle.package.v1")
     if name is None:
         yield "fail", "Bundle does not define the operator name in annotations.yaml"
@@ -18,6 +19,7 @@ def check_operator_name(bundle: Bundle) -> Iterator[Tuple[str, str]]:
 
 
 def check_image(bundle: Bundle) -> Iterator[Tuple[str, str]]:
+    """Check if containerImage is properly defined and used in a deployment"""
     try:
         container_image = lookup_dict(bundle.csv, "metadata.annotations.containerImage")
         if container_image is None:
@@ -37,6 +39,7 @@ def check_image(bundle: Bundle) -> Iterator[Tuple[str, str]]:
 
 
 def check_semver(bundle: Bundle) -> Iterator[Tuple[str, str]]:
+    """Check that the bundle version is semver compliant"""
     try:
         _ = Version.parse(bundle.operator_version)
     except ValueError:
