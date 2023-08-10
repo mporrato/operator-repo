@@ -542,5 +542,12 @@ class Repo:
     def __iter__(self) -> Iterator[Operator]:
         yield from self.all_operators()
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, self.__class__):
+            raise NotImplementedError(
+                f"Can't compare {self.__class__.__name__} to {other.__class__.__name__}"
+            )
+        return self._repo_path == other._repo_path
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self._repo_path})"

@@ -58,6 +58,8 @@ def test_bundle_non_semver(tmp_path: Path) -> None:
     bundle_99 = operator.bundle("0.0.99.0")
     bundle_100 = operator.bundle("0.0.100.0")
     assert bundle_99 > bundle_100
+    assert operator.channels == {"beta"}
+    assert operator.default_channel == "beta"
 
 
 def test_bundle_invalid(tmp_path: Path) -> None:
@@ -108,6 +110,8 @@ def test_bundle_invalid(tmp_path: Path) -> None:
     with pytest.raises(InvalidBundleException, match="Invalid .* contents"):
         _ = repo.operator("invalid_metadata_contents").bundle("0.0.1").annotations
     assert repo.operator("empty_metadata").bundle("0.0.1").annotations == {}
+    assert repo.operator("empty_metadata").channels == set()
+    assert repo.operator("empty_metadata").default_channel is None
     assert repo.has("missing_csv")
     with pytest.raises(InvalidBundleException, match="CSV file for .* not found"):
         _ = repo.operator("missing_csv").bundle("0.0.1").csv_operator_name

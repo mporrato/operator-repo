@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from operator_repo import Repo
+from operator_repo import Operator, Repo
+
 from tests import bundle_files, create_files
 
 
@@ -14,6 +15,8 @@ def test_operator_one_bundle(tmp_path: Path) -> None:
     create_files(tmp_path, bundle_files("hello", "0.0.1"))
     repo = Repo(tmp_path)
     operator = repo.operator("hello")
+    assert operator.repo == repo
+    assert Operator(operator.root).repo == repo
     bundle = operator.bundle("0.0.1")
     assert len(list(operator)) == 1
     assert set(operator) == {bundle}
