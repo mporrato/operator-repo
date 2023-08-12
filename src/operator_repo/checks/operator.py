@@ -1,4 +1,4 @@
-from typing import Iterator
+from collections.abc import Iterator
 
 from .. import Operator
 from . import CheckResult, Fail

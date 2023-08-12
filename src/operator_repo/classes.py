@@ -3,9 +3,10 @@
 """
 
 import logging
+from collections.abc import Iterator
 from functools import cached_property, total_ordering
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
+from typing import Any, Optional, Union
 
 from semver import Version
 
@@ -43,21 +44,21 @@ class Bundle:
         self._parent = operator
 
     @cached_property
-    def annotations(self) -> Dict[str, Any]:
+    def annotations(self) -> dict[str, Any]:
         """
         :return: The content of the "annotations" field in metadata/annotations.yaml
         """
         return self.load_metadata("annotations.yaml").get("annotations", {})
 
     @cached_property
-    def dependencies(self) -> List[Any]:
+    def dependencies(self) -> list[Any]:
         """
         :return: The content of the "dependencies" field in metadata/dependencies.yaml
         """
         return self.load_metadata("dependencies.yaml").get("dependencies", [])
 
     @cached_property
-    def csv(self) -> Dict[str, Any]:
+    def csv(self) -> dict[str, Any]:
         """
         :return: The content of the CSV file for the bundle
         """
@@ -67,7 +68,7 @@ class Bundle:
         return csv
 
     @cached_property
-    def csv_full_name(self) -> Tuple[str, str]:
+    def csv_full_name(self) -> tuple[str, str]:
         try:
             csv_full_name = self.csv["metadata"]["name"]
             name, version = csv_full_name.split(".", 1)
@@ -114,7 +115,7 @@ class Bundle:
             self._parent = Operator(self._bundle_path.parent)
         return self._parent
 
-    def load_metadata(self, filename: str) -> Dict[str, Any]:
+    def load_metadata(self, filename: str) -> dict[str, Any]:
         """
         Load and parse a yaml file from the metadata directory of the bundle
         :param filename: Name of the file
@@ -147,7 +148,7 @@ class Bundle:
         )
 
     @property
-    def channels(self) -> Set[str]:
+    def channels(self) -> set[str]:
         """
         :return: Set of channels the bundle belongs to
         """
@@ -316,7 +317,7 @@ class Operator:
         )
 
     @cached_property
-    def channels(self) -> Set[str]:
+    def channels(self) -> set[str]:
         """
         :return: All channels defined by the operator bundles
         """
@@ -354,7 +355,7 @@ class Operator:
         except IndexError:
             return None
 
-    def channel_bundles(self, channel: str) -> List[Bundle]:
+    def channel_bundles(self, channel: str) -> list[Bundle]:
         """
         :param channel: Name of the channel
         :return: List of bundles in the given channel
@@ -368,7 +369,7 @@ class Operator:
         """
         return self.channel_bundles(channel)[-1]
 
-    def update_graph(self, channel: str) -> Dict[Bundle, Set[Bundle]]:
+    def update_graph(self, channel: str) -> dict[Bundle, set[Bundle]]:
         """
         Return the update graph for the given channel
         :param channel: Name of the channel
@@ -383,7 +384,7 @@ class Operator:
             # TODO: implement semver-skippatch
             raise NotImplementedError("%s: semver-skippatch is not implemented yet")
         if update_strategy == "replaces-mode":
-            edges: Dict[Bundle, set[Bundle]] = {}
+            edges: dict[Bundle, set[Bundle]] = {}
             all_bundles_set = set(all_bundles)
             operator_names = {x.csv_operator_name for x in all_bundles_set}
             if len(operator_names) != 1:

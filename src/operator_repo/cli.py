@@ -5,9 +5,10 @@
 
 import argparse
 import logging
+from collections.abc import Iterator
 from itertools import chain
 from pathlib import Path
-from typing import Iterator, Union
+from typing import Union
 
 from .checks import get_checks, run_suite
 from .classes import Bundle, Operator, Repo
@@ -68,7 +69,9 @@ def action_list(repo_path, *what: str, recursive: bool = False) -> None:
             _list(parse_target(repo, target), recursive)
 
 
-def _walk(target: Repo | Operator | Bundle) -> Iterator[Repo | Operator | Bundle]:
+def _walk(
+    target: Union[Repo, Operator, Bundle]
+) -> Iterator[Union[Repo, Operator, Bundle]]:
     yield target
     if isinstance(target, Repo):
         for operator in target:

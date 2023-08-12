@@ -4,7 +4,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import yaml
 from yaml.composer import ComposerError
@@ -51,7 +51,7 @@ def load_yaml(path: Path) -> Any:
 
 
 def lookup_dict(
-    data: Dict[str, Any], path: str, default: Any = None, separator: str = "."
+    data: dict[str, Any], path: str, default: Any = None, separator: str = "."
 ) -> Any:
     keys = path.split(separator)
     subtree = data
