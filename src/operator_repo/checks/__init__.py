@@ -60,7 +60,8 @@ def get_checks(
 
 
 def run_suite(
-    targets: Iterable[Operator | Bundle], suite_name: str = "operator_repo.checks"
+    targets: Iterable[Repo | Operator | Bundle],
+    suite_name: str = "operator_repo.checks",
 ) -> Iterable[CheckResult]:
     checks = get_checks(suite_name)
     for target in targets:

@@ -95,14 +95,15 @@ def action_check(
     repo_path: Path, suite: str, *what: str, recursive: bool = False
 ) -> None:
     repo = Repo(repo_path)
-    if recursive:
-        if what:
-            targets = chain(_walk(parse_target(repo, x)) for x in what)
-        else:
-            targets = chain(_walk(x) for x in repo)
+    if what:
+        targets = [parse_target(repo, x) for x in what]
     else:
-        targets = [parse_target(repo, x) for x in what] or repo.all_operators()
-    for result in run_suite(targets, suite_name=suite):
+        targets = repo.all_operators()
+    if recursive:
+        all_targets = chain.from_iterable(_walk(x) for x in targets)
+    else:
+        all_targets = targets
+    for result in run_suite(all_targets, suite_name=suite):
         print(result)
 
 
