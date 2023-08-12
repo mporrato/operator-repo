@@ -18,7 +18,7 @@ def check_upgrade(operator: Operator) -> Iterator[CheckResult]:
             if dangling_bundles:
                 yield Fail(
                     operator,
-                    f"Channel {channel} has dangling bundles: {dangling_bundles}.",
+                    f"Channel {channel} has dangling bundles: {dangling_bundles}",
                 )
         except Exception as exc:
             yield Fail(operator, str(exc))

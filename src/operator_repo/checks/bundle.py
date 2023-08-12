@@ -11,7 +11,9 @@ def check_operator_name(bundle: Bundle) -> Iterator[CheckResult]:
     """Check if the operator names used in CSV, metadata and filesystem are consistent"""
     name = bundle.annotations.get("operators.operatorframework.io.bundle.package.v1")
     if name is None:
-        yield Fail(f"Bundle does not define the operator name in annotations.yaml")
+        yield Fail(
+            bundle, f"Bundle does not define the operator name in annotations.yaml"
+        )
         return
     if name != bundle.csv_operator_name:
         yield Fail(
