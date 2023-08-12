@@ -1,23 +1,26 @@
 import importlib
 from collections.abc import Callable, Iterable, Mapping
 from inspect import getmembers, isfunction
+from typing import Union
 
-from .. import Bundle, Operator
+from .. import Bundle, Operator, Repo
 
 
 class CheckResult:
     severity: int = 0
     display: str = "UNKNOWN"
+    origin: Union[Repo, Operator, Bundle, None]
     reason: str
 
-    def __init__(self, reason: str):
+    def __init__(self, origin, reason: str):
+        self.origin = origin
         self.reason = reason
 
     def __str__(self):
-        return f"{self.display}: {self.reason}"
+        return f"{self.display}: {self.origin}: {self.reason}"
 
     def __repr__(self):
-        return f"{self.display}({self.reason})"
+        return f"{self.display}({self.origin}, {self.reason})"
 
     def __int__(self):
         return self.severity
