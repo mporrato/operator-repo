@@ -2,11 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from operator_repo.utils import load_yaml
-
-from operator_repo.utils import lookup_dict
-
 from operator_repo.exceptions import OperatorRepoException
+from operator_repo.utils import load_yaml, lookup_dict
 from tests import create_files
 
 

@@ -1,9 +1,10 @@
-from typing import Iterator, Tuple
+from typing import Iterator
 
 from .. import Operator
+from . import CheckResult, Fail
 
 
-def check_upgrade(operator: Operator) -> Iterator[Tuple[str, str]]:
+def check_upgrade(operator: Operator) -> Iterator[CheckResult]:
     """Validate upgrade graphs for all channels"""
     all_channels = operator.channels | {operator.default_channel} - {None}
     for channel in sorted(all_channels):
@@ -15,6 +16,8 @@ def check_upgrade(operator: Operator) -> Iterator[Tuple[str, str]]:
                 x for x in channel_bundles if x not in graph and x != channel_head
             }
             if dangling_bundles:
-                yield "fail", f"Channel {channel} has dangling bundles: {dangling_bundles}."
+                yield Fail(
+                    f"Channel {channel} has dangling bundles: {dangling_bundles}."
+                )
         except Exception as e:
-            yield "fail", str(e)
+            yield Fail(str(e))

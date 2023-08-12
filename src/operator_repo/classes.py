@@ -409,7 +409,7 @@ class Operator:
                     ) = replaced_bundle_name.split(".", 1)
                     if replaced_bundle_operator != bundle.csv_operator_name:
                         raise ValueError(
-                            f"{self}: {bundle} replaces a bundle from a different operator"
+                            f"{bundle} replaces a bundle from a different operator"
                         )
                     try:
                         replaced_bundle = version_to_bundle[

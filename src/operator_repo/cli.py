@@ -5,12 +5,11 @@
 
 import argparse
 import logging
-from inspect import getmembers, isfunction
+from itertools import chain
 from pathlib import Path
-from typing import Union
+from typing import Iterator, Union
 
-from .checks import bundle as bundle_checks
-from .checks import operator as operator_checks
+from .checks import get_checks, run_suite
 from .classes import Bundle, Operator, Repo
 
 
@@ -69,44 +68,36 @@ def action_list(repo_path, *what: str, recursive: bool = False) -> None:
             _list(parse_target(repo, target), recursive)
 
 
-def action_check_bundle(bundle: Bundle) -> None:
-    print(f"Checking {bundle}")
-    for check_name, check in getmembers(bundle_checks, isfunction):
-        if check_name.startswith("check_"):
-            for result, message in check(bundle):
-                print(f"{result.upper()}: {bundle}: {message}")
+def _walk(target: Repo | Operator | Bundle) -> Iterator[Repo | Operator | Bundle]:
+    yield target
+    if isinstance(target, Repo):
+        for operator in target:
+            yield from _walk(operator)
+    elif isinstance(target, Operator):
+        yield from target.all_bundles()
 
 
-def action_check_operator(operator: Operator) -> None:
-    print(f"Checking {operator}")
-    for check_name, check in getmembers(operator_checks, isfunction):
-        if check_name.startswith("check_"):
-            for result, message in check(operator):
-                print(f"{result.upper()}: {operator}: {message}")
-
-
-def action_check(repo_path: Path, *what: str, recursive: bool = False) -> None:
+def action_check(
+    repo_path: Path, suite: str, *what: str, recursive: bool = False
+) -> None:
     repo = Repo(repo_path)
-    for target in [parse_target(repo, x) for x in what] or sorted(repo):
-        if isinstance(target, Operator):
-            action_check_operator(target)
-            if recursive:
-                for bundle in sorted(target):
-                    action_check_bundle(bundle)
-        elif isinstance(target, Bundle):
-            action_check_bundle(target)
+    if recursive:
+        if what:
+            targets = chain(_walk(parse_target(repo, x)) for x in what)
+        else:
+            targets = chain(_walk(x) for x in repo)
+    else:
+        targets = [parse_target(repo, x) for x in what] or repo.all_operators()
+    for result in run_suite(targets, suite_name=suite):
+        print(result)
 
 
-def action_check_list() -> None:
-    for check_type_name, check_type in (
-        ("Operator", operator_checks),
-        ("Bundle", bundle_checks),
-    ):
+def action_check_list(suite: str) -> None:
+    for check_type_name, checks in get_checks(suite).items():
         print(f"{check_type_name} checks:")
-        for check_name, check in getmembers(check_type, isfunction):
-            if check_name.startswith("check_"):
-                display_name = check_name.removeprefix("check_")
-                print(f" - {display_name}: {check.__doc__}")
+        for check in checks:
+            display_name = check.__name__.removeprefix("check_")
+            print(f" - {display_name}: {check.__doc__}")
 
 
 def main() -> None:
@@ -140,7 +131,10 @@ def main() -> None:
         help="check validity of an operator or bundle",
     )
     check_parser.add_argument(
-        "--list", action="store_true", help="list available checks"
+        "-s", "--suite", default="operator_repo.checks", help="check suite to use"
+    )
+    check_parser.add_argument(
+        "-l", "--list", action="store_true", help="list available checks"
     )
     check_parser.add_argument(
         "-R", "--recursive", action="store_true", help="descend the tree"
@@ -167,10 +161,13 @@ def main() -> None:
         action_list(args.repo or Path.cwd(), *args.target, recursive=args.recursive)
     elif args.action == "check":
         if args.list:
-            action_check_list()
+            action_check_list(args.suite)
         else:
             action_check(
-                args.repo or Path.cwd(), *args.target, recursive=args.recursive
+                args.repo or Path.cwd(),
+                args.suite,
+                *args.target,
+                recursive=args.recursive,
             )
     else:
         main_parser.print_help()

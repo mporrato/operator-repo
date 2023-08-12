@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from operator_repo import Operator, Repo
-
 from tests import bundle_files, create_files
 
 
