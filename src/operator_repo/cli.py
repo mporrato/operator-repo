@@ -25,48 +25,59 @@ def indent(depth: int) -> str:
     return "  " * depth
 
 
-def _list(
-    target: Union[Repo, Operator, Bundle], recursive: bool = False, depth: int = 0
-) -> None:
+def show_repo(repo: Repo, recursive: bool = False, depth: int = 0) -> None:
+    print(indent(depth) + str(repo))
+    for operator in repo:
+        if recursive:
+            show_operator(operator, recursive, depth + 1)
+        else:
+            print(indent(depth + 1) + str(operator))
+
+
+def show_operator(operator: Operator, recursive: bool = False, depth: int = 0) -> None:
+    print(indent(depth) + str(operator))
+    for bundle in operator:
+        if recursive:
+            show_bundle(bundle, recursive, depth + 1)
+        else:
+            print(indent(depth + 1) + str(bundle))
+
+
+def show_bundle(bundle: Bundle, recursive: bool = False, depth: int = 0) -> None:
+    print(indent(depth) + str(bundle))
+    csv_annotations = bundle.csv.get("metadata", {}).get("annotations", {})
+    info = [
+        ("Description", csv_annotations.get("description", "")),
+        ("Name", f"{bundle.csv_operator_name}.v{bundle.csv_operator_version}"),
+        ("Channels", ", ".join(bundle.channels)),
+        ("Default channel", bundle.default_channel),
+        ("Container image", csv_annotations.get("containerImage", "")),
+        ("Replaces", bundle.csv.get("spec", {}).get("replaces", "")),
+        ("Skips", bundle.csv.get("spec", {}).get("skips", [])),
+    ]
+    max_width = max(len(key) for key, _ in info)
+    for key, value in info:
+        message = f"{key.ljust(max_width + 1)}: {value}"
+        print(indent(depth + 1) + message)
+
+
+def show(target: Union[Repo, Operator, Bundle], recursive: bool = False) -> None:
     if isinstance(target, Repo):
-        print(indent(depth) + str(target))
-        for operator in target:
-            if recursive:
-                _list(operator, True, depth + 1)
-            else:
-                print(indent(depth + 1) + str(operator))
+        show_repo(target, recursive, 0)
     elif isinstance(target, Operator):
-        print(indent(depth) + str(target))
-        for bundle in target:
-            if recursive:
-                _list(bundle, True, depth + 1)
-            else:
-                print(indent(depth + 1) + str(bundle))
+        show_operator(target, recursive, 1 * recursive)
     elif isinstance(target, Bundle):
-        print(indent(depth) + str(target))
-        csv_annotations = target.csv.get("metadata", {}).get("annotations", {})
-        info = [
-            ("Description", csv_annotations.get("description", "")),
-            ("Name", f"{target.csv_operator_name}.{target.csv_operator_version}"),
-            ("Channels", ", ".join(target.channels)),
-            ("Default channel", target.default_channel),
-            ("Container image", csv_annotations.get("containerImage", "")),
-            ("Replaces", target.csv.get("spec", {}).get("replaces", "")),
-            ("Skips", target.csv.get("spec", {}).get("skips", [])),
-        ]
-        max_width = max(len(key) for key, _ in info)
-        for key, value in info:
-            message = f"{key.ljust(max_width+1)}: {value}"
-            print(indent(depth + 1) + message)
+        show_bundle(target, recursive, 2 * recursive)
 
 
 def action_list(repo_path, *what: str, recursive: bool = False) -> None:
     repo = Repo(repo_path)
-    if not what:
-        _list(repo, recursive)
+    if what:
+        targets = (parse_target(repo, x) for x in what)
     else:
-        for target in what:
-            _list(parse_target(repo, target), recursive)
+        targets = [repo]
+    for target in targets:
+        show(target, recursive)
 
 
 def _walk(
