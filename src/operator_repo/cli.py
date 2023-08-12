@@ -54,7 +54,7 @@ def _list(
             ("Replaces", target.csv.get("spec", {}).get("replaces", "")),
             ("Skips", target.csv.get("spec", {}).get("skips", [])),
         ]
-        max_width = max([len(key) for key, _ in info])
+        max_width = max(len(key) for key, _ in info)
         for key, value in info:
             message = f"{key.ljust(max_width+1)}: {value}"
             print(indent(depth + 1) + message)

@@ -39,10 +39,12 @@ def _load_yaml_strict(path: Path) -> Any:
     with path.open("r") as yaml_file:
         try:
             return yaml.safe_load(yaml_file)
-        except ComposerError:
-            raise OperatorRepoException(f"{path} contains multiple yaml documents")
-        except ParserError:
-            raise OperatorRepoException(f"{path} is not a valid yaml document")
+        except ComposerError as exc:
+            raise OperatorRepoException(
+                f"{path} contains multiple yaml documents"
+            ) from exc
+        except ParserError as exc:
+            raise OperatorRepoException(f"{path} is not a valid yaml document") from exc
 
 
 def load_yaml(path: Path) -> Any:
