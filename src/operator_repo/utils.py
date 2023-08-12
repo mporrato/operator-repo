@@ -16,8 +16,28 @@ log = logging.getLogger(__name__)
 
 
 def _find_yaml(path: Path) -> Path:
-    """Look for yaml files with alternate extensions"""
+    """
+    Find a YAML file by looking for files with alternate extensions.
 
+    This function searches for a YAML file by trying multiple extensions (.yaml and .yml)
+    and checking if the file exists. It is used to locate YAML files with different possible
+    extensions in order to provide flexibility when specifying file paths.
+
+    Args:
+        path (Path): The path to the file with or without a YAML extension.
+
+    Returns:
+        Path: The path to the found YAML file.
+
+    Raises:
+        FileNotFoundError: If a YAML file with any of the tried extensions cannot be found.
+
+    Example:
+        file_path = Path("my_file.json")
+        yaml_path = _find_yaml(file_path)
+        # If "my_file.yaml" or "my_file.yml" exists, yaml_path will point to the found YAML file.
+        # Otherwise, a FileNotFoundError will be raised.
+    """
     if path.is_file():
         return path
     tries = [path]
@@ -33,8 +53,28 @@ def _find_yaml(path: Path) -> Path:
 
 
 def _load_yaml_strict(path: Path) -> Any:
-    """Returns the parsed contents of the YAML file at the given path"""
+    """
+    Load and parse the contents of a YAML file at the given path.
 
+    This function reads the contents of the specified YAML file and attempts to parse it
+    using the `yaml.safe_load` method. If the YAML document contains multiple documents or
+    if it's not a valid YAML document, exceptions are raised accordingly.
+
+    Args:
+        path (Path): The path to the YAML file to be loaded.
+
+    Returns:
+        Any: The parsed contents of the YAML file.
+
+    Raises:
+        OperatorRepoException: If the YAML file contains multiple documents.
+        OperatorRepoException: If the YAML file is not a valid YAML document.
+
+    Example:
+        yaml_path = Path("my_file.yaml")
+        yaml_content = _load_yaml_strict(yaml_path)
+        # The parsed contents of the YAML file will be stored in the `yaml_content` variable.
+    """
     log.debug("Loading %s", path)
     with path.open("r") as yaml_file:
         try:
@@ -48,13 +88,58 @@ def _load_yaml_strict(path: Path) -> Any:
 
 
 def load_yaml(path: Path) -> Any:
-    """Same as _load_yaml_strict but tries both .yaml and .yml extensions"""
+    """
+    Load and parse the contents of a YAML file at the given path with alternate extensions.
+
+    Args:
+        path (Path): The path to the file with or without a YAML extension.
+
+    Returns:
+        Any: The parsed contents of the YAML file.
+
+    Raises:
+        OperatorRepoException: If the YAML file contains multiple documents.
+        OperatorRepoException: If the YAML file is not a valid YAML document.
+
+    Example:
+        file_path = Path("my_file.json")
+        yaml_content = load_yaml(file_path)
+        # If "my_file.yaml" or "my_file.yml" exists, the parsed contents of the YAML file
+        # will be stored in the `yaml_content` variable.
+    """
     return _load_yaml_strict(_find_yaml(path))
 
 
 def lookup_dict(
     data: dict[str, Any], path: str, default: Any = None, separator: str = "."
 ) -> Any:
+    """
+    Retrieve a value from a nested dictionary using a specific path of keys.
+
+    This function allows you to access a value in a nested dictionary by providing a
+    dot-separated path of keys. If the path exists in the dictionary, the corresponding
+    value is returned. If the path does not exist, the specified default value is returned.
+
+    Args:
+        data (dict): The nested dictionary from which to retrieve the value.
+        path (str): A dot-separated string representing the path to the desired value.
+        default (Any, optional): The value to return if the path does not exist. Defaults to None.
+        separator (str, optional): The separator used to split the path into keys. Defaults to ".".
+
+    Returns:
+        Any: The value at the specified path if found, otherwise the default value.
+
+    Example:
+        data = {
+            "a": {
+                "b": {
+                    "c": 42
+                }
+            }
+        }
+        value = lookup_dict(data, "a.b.c")
+        # value will be 42
+    """
     keys = path.split(separator)
     subtree = data
     for key in keys:
