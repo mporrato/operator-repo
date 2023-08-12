@@ -12,19 +12,21 @@ def check_operator_name(bundle: Bundle) -> Iterator[CheckResult]:
     name = bundle.annotations.get("operators.operatorframework.io.bundle.package.v1")
     if name is None:
         yield Fail(
-            bundle, f"Bundle does not define the operator name in annotations.yaml"
+            bundle, "Bundle does not define the operator name in annotations.yaml"
         )
         return
     if name != bundle.csv_operator_name:
-        yield Fail(
-            bundle,
-            f"Operator name from annotations.yaml ({name}) does not match the name defined in the CSV ({bundle.csv_operator_name})",
+        msg = (
+            f"Operator name from annotations.yaml ({name})"
+            f" does not match the name defined in the CSV ({bundle.csv_operator_name})"
         )
+        yield Fail(bundle, msg)
     if name != bundle.operator_name:
-        yield Fail(
-            bundle,
-            f"Operator name from annotations.yaml ({name}) does not match the operator's directory name ({bundle.operator_name})",
+        msg = (
+            f"Operator name from annotations.yaml ({name})"
+            f" does not match the operator's directory name ({bundle.operator_name})"
         )
+        yield Fail(bundle, msg)
 
 
 def check_image(bundle: Bundle) -> Iterator[CheckResult]:
@@ -33,12 +35,12 @@ def check_image(bundle: Bundle) -> Iterator[CheckResult]:
         container_image = lookup_dict(bundle.csv, "metadata.annotations.containerImage")
         if container_image is None:
             yield Fail(
-                bundle, f"CSV doesn't define .metadata.annotations.containerImage"
+                bundle, "CSV doesn't define .metadata.annotations.containerImage"
             )
             return
         deployments = lookup_dict(bundle.csv, "spec.install.spec.deployments")
         if deployments is None:
-            yield Fail(bundle, f"CSV doesn't define .spec.install.spec.deployments")
+            yield Fail(bundle, "CSV doesn't define .spec.install.spec.deployments")
             return
         for deployment in deployments:
             containers = lookup_dict(deployment, "spec.template.spec.containers", [])
@@ -47,8 +49,8 @@ def check_image(bundle: Bundle) -> Iterator[CheckResult]:
         yield Fail(
             bundle, f"container image {container_image} not used by any deployment"
         )
-    except Exception as e:
-        yield Fail(bundle, str(e))
+    except Exception as exc:
+        yield Fail(bundle, str(exc))
 
 
 def check_semver(bundle: Bundle) -> Iterator[CheckResult]:
