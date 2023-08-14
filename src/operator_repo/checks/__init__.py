@@ -8,7 +8,7 @@ from .. import Bundle, Operator, Repo
 
 class CheckResult:
     severity: int = 0
-    display: str = "UNKNOWN"
+    kind: str = "unknown"
     origin: Union[Repo, Operator, Bundle, None]
     reason: str
 
@@ -17,10 +17,10 @@ class CheckResult:
         self.reason = reason
 
     def __str__(self):
-        return f"{self.display}: {self.origin}: {self.reason}"
+        return f"{self.kind}: {self.origin}: {self.reason}"
 
     def __repr__(self):
-        return f"{self.display}({self.origin}, {self.reason})"
+        return f"{self.kind}({self.origin}, {self.reason})"
 
     def __int__(self):
         return self.severity
@@ -31,12 +31,12 @@ class CheckResult:
 
 class Warn(CheckResult):
     severity = 40
-    display = "WARNING"
+    kind = "warning"
 
 
 class Fail(CheckResult):
     severity = 90
-    display = "FAILURE"
+    kind = "failure"
 
 
 SUPPORTED_TYPES = [("operator", Operator), ("bundle", Bundle)]
