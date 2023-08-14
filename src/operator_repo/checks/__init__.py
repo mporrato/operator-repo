@@ -1,9 +1,12 @@
 import importlib
+import logging
 from collections.abc import Callable, Iterable, Mapping
 from inspect import getmembers, isfunction
 from typing import Union
 
 from .. import Bundle, Operator, Repo
+
+log = logging.getLogger(__name__)
 
 
 class CheckResult:
@@ -53,6 +56,12 @@ def get_checks(
             module = importlib.import_module(f"{suite_name}.{module_name}")
             for check_name, check in getmembers(module, isfunction):
                 if check_name.startswith("check_"):
+                    log.debug(
+                        "Detected %s check with name %s in %s",
+                        module_name,
+                        check_name,
+                        suite_name,
+                    )
                     result[module_name].append(check)
         except ModuleNotFoundError:
             pass
@@ -68,4 +77,5 @@ def run_suite(
         for target_type_name, target_type in SUPPORTED_TYPES:
             if isinstance(target, target_type):
                 for check in checks.get(target_type_name, []):
+                    log.debug("Running %s check on %s", check.__name__, target)
                     yield from check(target)
