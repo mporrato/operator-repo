@@ -1,8 +1,8 @@
 import importlib
 import logging
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable
 from inspect import getmembers, isfunction
-from typing import Union
+from typing import Optional, Union
 
 from .. import Bundle, Operator, Repo
 
@@ -12,18 +12,20 @@ log = logging.getLogger(__name__)
 class CheckResult:
     severity: int = 0
     kind: str = "unknown"
+    check: Optional[str]
     origin: Union[Repo, Operator, Bundle, None]
     reason: str
 
-    def __init__(self, origin, reason: str):
-        self.origin = origin
+    def __init__(self, reason: str):
+        self.origin = None
+        self.check = None
         self.reason = reason
 
     def __str__(self):
-        return f"{self.kind}: {self.origin}: {self.reason}"
+        return f"{self.kind}: {self.check}({self.origin}): {self.reason}"
 
     def __repr__(self):
-        return f"{self.kind}({self.origin}, {self.reason})"
+        return f"{self.kind}({self.check}, {self.origin}, {self.reason})"
 
     def __int__(self):
         return self.severity
@@ -33,22 +35,24 @@ class CheckResult:
 
 
 class Warn(CheckResult):
+    # pylint: disable=too-few-public-methods
     severity = 40
     kind = "warning"
 
 
 class Fail(CheckResult):
+    # pylint: disable=too-few-public-methods
     severity = 90
     kind = "failure"
 
 
 SUPPORTED_TYPES = [("operator", Operator), ("bundle", Bundle)]
-Check = Callable[[Operator | Bundle], Iterable[CheckResult]]
+Check = Callable[[Union[Repo, Operator, Bundle]], Iterable[CheckResult]]
 
 
 def get_checks(
     suite_name: str = "operator_repo.checks",
-) -> Mapping[str, Iterable[Check]]:
+) -> dict[str, list[Check]]:
     result = {}
     for module_name, _ in SUPPORTED_TYPES:
         result[module_name] = []
@@ -68,8 +72,18 @@ def get_checks(
     return result
 
 
+def run_check(
+    check: Check, target: Union[Repo, Operator, Bundle]
+) -> Iterable[CheckResult]:
+    log.debug("Running %s check on %s", check.__name__, target)
+    for result in check(target):
+        result.check = check.__name__
+        result.origin = target
+        yield result
+
+
 def run_suite(
-    targets: Iterable[Repo | Operator | Bundle],
+    targets: Iterable[Union[Repo, Operator, Bundle]],
     suite_name: str = "operator_repo.checks",
 ) -> Iterable[CheckResult]:
     checks = get_checks(suite_name)
@@ -77,5 +91,4 @@ def run_suite(
         for target_type_name, target_type in SUPPORTED_TYPES:
             if isinstance(target, target_type):
                 for check in checks.get(target_type_name, []):
-                    log.debug("Running %s check on %s", check.__name__, target)
-                    yield from check(target)
+                    yield from run_check(check, target)

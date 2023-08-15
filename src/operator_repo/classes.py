@@ -369,6 +369,46 @@ class Operator:
         """
         return self.channel_bundles(channel)[-1]
 
+    @staticmethod
+    def _replaces_graph(
+        channel: str, bundles: list[Bundle]
+    ) -> dict[Bundle, set[Bundle]]:
+        edges: dict[Bundle, set[Bundle]] = {}
+        all_bundles_set = set(bundles)
+        version_to_bundle = {x.csv_operator_version: x for x in all_bundles_set}
+        for bundle in all_bundles_set:
+            spec = bundle.csv.get("spec", {})
+            replaces = spec.get("replaces")
+            skips = spec.get("skips", [])
+            previous = set(skips) | {replaces}
+            for replaced_bundle_name in previous:
+                if replaced_bundle_name is None:
+                    continue
+                if ".v" not in replaced_bundle_name:
+                    raise ValueError(
+                        f"{bundle} has invalid 'replaces' field: '{replaced_bundle_name}'"
+                    )
+                (
+                    replaced_bundle_operator,
+                    replaced_bundle_version,
+                ) = replaced_bundle_name.split(".", 1)
+                if replaced_bundle_operator != bundle.csv_operator_name:
+                    raise ValueError(
+                        f"{bundle} replaces a bundle from a different operator"
+                    )
+                try:
+                    replaced_bundle = version_to_bundle[
+                        replaced_bundle_version.lstrip("v")
+                    ]
+                    if (
+                        channel in bundle.channels
+                        and channel in replaced_bundle.channels
+                    ):
+                        edges.setdefault(replaced_bundle, set()).add(bundle)
+                except KeyError:
+                    pass
+        return edges
+
     def update_graph(self, channel: str) -> dict[Bundle, set[Bundle]]:
         """
         Return the update graph for the given channel
@@ -378,52 +418,18 @@ class Operator:
         """
         all_bundles = self.channel_bundles(channel)
         update_strategy = self.config.get("updateGraph", "replaces-mode")
+        operator_names = {x.csv_operator_name for x in all_bundles}
+        if len(operator_names) > 1:
+            raise ValueError(
+                f"{self} has bundles with different operator names: {operator_names}"
+            )
         if update_strategy == "semver-mode":
             return {x: {y} for x, y in zip(all_bundles, all_bundles[1:])}
         if update_strategy == "semver-skippatch":
             # TODO: implement semver-skippatch
             raise NotImplementedError("%s: semver-skippatch is not implemented yet")
         if update_strategy == "replaces-mode":
-            edges: dict[Bundle, set[Bundle]] = {}
-            all_bundles_set = set(all_bundles)
-            operator_names = {x.csv_operator_name for x in all_bundles_set}
-            if len(operator_names) != 1:
-                raise ValueError(
-                    f"{self} has bundles with different operator names: {operator_names}"
-                )
-            version_to_bundle = {x.csv_operator_version: x for x in all_bundles_set}
-            for bundle in all_bundles_set:
-                spec = bundle.csv.get("spec", {})
-                replaces = spec.get("replaces")
-                skips = spec.get("skips", [])
-                previous = set(skips) | {replaces}
-                for replaced_bundle_name in previous:
-                    if replaced_bundle_name is None:
-                        continue
-                    if ".v" not in replaced_bundle_name:
-                        raise ValueError(
-                            f"{bundle} has invalid 'replaces' field: '{replaced_bundle_name}'"
-                        )
-                    (
-                        replaced_bundle_operator,
-                        replaced_bundle_version,
-                    ) = replaced_bundle_name.split(".", 1)
-                    if replaced_bundle_operator != bundle.csv_operator_name:
-                        raise ValueError(
-                            f"{bundle} replaces a bundle from a different operator"
-                        )
-                    try:
-                        replaced_bundle = version_to_bundle[
-                            replaced_bundle_version.lstrip("v")
-                        ]
-                        if (
-                            channel in bundle.channels
-                            and channel in replaced_bundle.channels
-                        ):
-                            edges.setdefault(replaced_bundle, set()).add(bundle)
-                    except KeyError:
-                        pass
-            return edges
+            return self._replaces_graph(channel, all_bundles)
         raise ValueError(f"{self}: unknown updateGraph value: {update_strategy}")
 
     def __eq__(self, other: object) -> bool:
