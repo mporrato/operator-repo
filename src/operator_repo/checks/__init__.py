@@ -30,8 +30,22 @@ class CheckResult:
     def __int__(self):
         return self.severity
 
+    def __eq__(self, other):
+        return (self.kind, self.reason, self.check, self.origin) == (
+            other.kind,
+            other.reason,
+            other.check,
+            other.origin,
+        )
+
+    def __ne__(self, other):
+        return not self == other
+
     def __lt__(self, other):
         return int(self) < int(other)
+
+    def __hash__(self):
+        return hash((self.kind, self.reason, self.check, self.origin))
 
 
 class Warn(CheckResult):
