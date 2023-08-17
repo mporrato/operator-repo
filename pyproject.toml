@@ -1,5 +1,5 @@
 [project]
-name = "operator_repo"
+name = "operator-repo"
 version = "0.1.0"
 description = "Library and utilities to handle repositories of kubernetes operators"
 authors = [
