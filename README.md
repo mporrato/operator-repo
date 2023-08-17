@@ -39,7 +39,7 @@ Operator(etcd)
   Bundle(etcd/0.9.4)
 ```
 ```commandline
-$ optool -R ~/operator-repo ls etcd/0.9.4
+$ optool -r ~/operator-repo ls etcd/0.9.4
 Bundle(etcd/0.9.4)
   Description     : Create and maintain highly-available etcd clusters on Kubernetes
   Name            : etcdoperator.v0.9.4
