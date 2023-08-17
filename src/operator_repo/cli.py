@@ -9,7 +9,7 @@ import sys
 from collections.abc import Iterator
 from itertools import chain
 from pathlib import Path
-from typing import Union, Optional
+from typing import Optional, Union
 
 from .checks import get_checks, run_suite
 from .classes import Bundle, Operator, Repo

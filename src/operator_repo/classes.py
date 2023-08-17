@@ -176,10 +176,7 @@ class Bundle:
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
-            raise TypeError(
-                f"== not supported between instances of '{self.__class__.__name__}'"
-                f" and '{other.__class__.__name__}"
-            )
+            return False
         if self.csv_operator_name != other.csv_operator_name:
             return False
         try:
@@ -204,7 +201,6 @@ class Bundle:
                 f" and '{other.__class__.__name__}"
             )
         if self.csv_operator_name != other.csv_operator_name:
-            # raise ValueError("Can't compare bundles from different operators")
             return self.csv_operator_name < other.csv_operator_name
         try:
             return Version.parse(self.csv_operator_version.lstrip("v")) < Version.parse(
@@ -434,21 +430,15 @@ class Operator:
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
-            raise NotImplementedError(
-                f"Can't compare {self.__class__.__name__} to {other.__class__.__name__}"
-            )
+            return False
         return self.operator_name == other.operator_name
 
     def __ne__(self, other: object) -> bool:
-        if not isinstance(other, self.__class__):
-            raise NotImplementedError(
-                f"Can't compare {self.__class__.__name__} to {other.__class__.__name__}"
-            )
-        return self.operator_name != other.operator_name
+        return not self == other
 
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
-            raise NotImplementedError(
+            raise TypeError(
                 f"Can't compare {self.__class__.__name__} to {other.__class__.__name__}"
             )
         return self.operator_name < other.operator_name
@@ -551,9 +541,7 @@ class Repo:
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
-            raise NotImplementedError(
-                f"Can't compare {self.__class__.__name__} to {other.__class__.__name__}"
-            )
+            return False
         return self._repo_path == other._repo_path
 
     def __repr__(self) -> str:

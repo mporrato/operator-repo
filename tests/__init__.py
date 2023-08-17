@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import yaml
 
@@ -153,3 +153,19 @@ def bundle_files(
         },
         other_files or {},
     )
+
+
+def make_nested_dict(items: dict[str, Any]) -> dict:
+    """
+    _make_nested_dict({"foo.bar": "baz"}) -> {"foo": {"bar": "baz"}}
+    """
+    result = {}
+    for path, value in items.items():
+        current = result
+        keys = path.split(".")
+        for key in keys[:-1]:
+            if key not in current:
+                current[key] = {}
+            current = current[key]
+        current[keys[-1]] = value
+    return result

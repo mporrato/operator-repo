@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from operator_repo import Operator, Repo
 from tests import bundle_files, create_files
 
@@ -25,6 +27,9 @@ def test_operator_one_bundle(tmp_path: Path) -> None:
     assert bundle.dependencies == []
     assert operator.root == repo.root / "operators" / "hello"
     assert "hello" in repr(operator)
+    assert operator != "foo"
+    with pytest.raises(TypeError):
+        _ = operator < "foo"
 
 
 def test_channels(tmp_path: Path) -> None:
