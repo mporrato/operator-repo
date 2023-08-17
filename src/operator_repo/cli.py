@@ -5,13 +5,15 @@
 
 import argparse
 import logging
+import sys
 from collections.abc import Iterator
 from itertools import chain
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 
 from .checks import get_checks, run_suite
 from .classes import Bundle, Operator, Repo
+from .exceptions import OperatorRepoException
 
 
 def parse_target(repo: Repo, target: str) -> Union[Operator, Bundle]:
@@ -115,6 +117,16 @@ def action_check_list(suite: str) -> None:
             print(f" - {display_name}: {check.__doc__}")
 
 
+def _get_repo(path: Optional[Path]) -> Repo:
+    if not path:
+        path = Path.cwd()
+    try:
+        return Repo(path)
+    except OperatorRepoException:
+        print(f"{path} is not a valid operator repository")
+        sys.exit(1)
+
+
 def main() -> None:
     main_parser = argparse.ArgumentParser(
         description="Operator repository manipulation tool",
@@ -161,7 +173,6 @@ def main() -> None:
     )
 
     args = main_parser.parse_args()
-    # print(args)
 
     verbosity = {0: logging.ERROR, 1: logging.WARNING, 2: logging.INFO}
     log = logging.getLogger(__package__)
@@ -173,13 +184,13 @@ def main() -> None:
     log.addHandler(handler)
 
     if args.action in ("list", "ls"):
-        action_list(args.repo or Path.cwd(), *args.target, recursive=args.recursive)
+        action_list(_get_repo(args.repo), *args.target, recursive=args.recursive)
     elif args.action == "check":
         if args.list:
             action_check_list(args.suite)
         else:
             action_check(
-                args.repo or Path.cwd(),
+                _get_repo(args.repo),
                 args.suite,
                 *args.target,
                 recursive=args.recursive,
