@@ -13,12 +13,17 @@ class CheckResult:
     severity: int = 0
     kind: str = "unknown"
     check: Optional[str]
-    origin: Union[Repo, Operator, Bundle, None]
+    origin: Optional[Union[Repo, Operator, Bundle]]
     reason: str
 
-    def __init__(self, reason: str):
-        self.origin = None
-        self.check = None
+    def __init__(
+        self,
+        reason: str,
+        check: Optional[str] = None,
+        origin: Optional[Union[Repo, Operator, Bundle]] = None,
+    ):
+        self.origin = origin
+        self.check = check
         self.reason = reason
 
     def __str__(self):
