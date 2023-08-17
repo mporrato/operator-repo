@@ -1,9 +1,10 @@
 from pathlib import Path
+from typing import Optional, Union
 
 import yaml
 
 
-def merge(a, b, path=None):
+def merge(a: dict, b: dict, path: Optional[list[str]] = None) -> dict:
     """
     Recursively merge two dictionaries, with values from the second dictionary (b)
     overwriting corresponding values in the first dictionary (a). This function can
@@ -39,7 +40,7 @@ def merge(a, b, path=None):
     return a
 
 
-def create_files(path, *contents):
+def create_files(path: Union[str, Path], *contents: dict) -> None:
     """
     Create files and directories at the specified path based on the provided content.
 
@@ -86,8 +87,12 @@ def create_files(path, *contents):
 
 
 def bundle_files(
-    operator_name, bundle_version, annotations=None, csv=None, other_files=None
-):
+    operator_name: str,
+    bundle_version: str,
+    annotations: dict = None,
+    csv: dict = None,
+    other_files: dict = None,
+) -> dict:
     """
     Create a bundle of files and metadata for an Operator package.
 
