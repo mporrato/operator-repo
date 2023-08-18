@@ -83,26 +83,21 @@ def action_list(repo: Repo, *what: str, recursive: bool = False) -> None:
         show(target, recursive)
 
 
-def _walk(
-    target: Union[Repo, Operator, Bundle]
-) -> Iterator[Union[Repo, Operator, Bundle]]:
+def _walk(target: Union[Operator, Bundle]) -> Iterator[Union[Operator, Bundle]]:
     yield target
-    if isinstance(target, Repo):
-        for operator in target:
-            yield from _walk(operator)
-    elif isinstance(target, Operator):
+    if isinstance(target, Operator):
         yield from target.all_bundles()
 
 
 def action_check(repo: Repo, suite: str, *what: str, recursive: bool = False) -> None:
     if what:
-        targets: Iterator[Union[Repo, Operator, Bundle]] = (
+        targets: Iterator[Union[Operator, Bundle]] = (
             parse_target(repo, x) for x in what
         )
     else:
         targets = repo.all_operators()
     if recursive:
-        all_targets: Iterator[Union[Repo, Operator, Bundle]] = chain.from_iterable(
+        all_targets: Iterator[Union[Operator, Bundle]] = chain.from_iterable(
             _walk(x) for x in targets
         )
     else:
@@ -119,7 +114,7 @@ def action_check_list(suite: str) -> None:
             print(f" - {display_name}: {check.__doc__}")
 
 
-def _get_repo(path: Optional[Path]) -> Repo:
+def _get_repo(path: Optional[Path] = None) -> Repo:
     if not path:
         path = Path.cwd()
     try:
@@ -201,5 +196,5 @@ def main() -> None:
         main_parser.print_help()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

@@ -40,6 +40,8 @@ class CheckResult:
         return self.severity
 
     def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return False
         return (self.kind, self.reason, self.check, self.origin) == (
             other.kind,
             other.reason,

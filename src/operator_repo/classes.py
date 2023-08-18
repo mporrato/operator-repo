@@ -442,12 +442,11 @@ class Operator:
             )
         if update_strategy == "semver-mode":
             return {x: {y} for x, y in zip(all_bundles, all_bundles[1:])}
-        if update_strategy == "semver-skippatch":
-            # TODO: implement semver-skippatch
-            raise NotImplementedError("%s: semver-skippatch is not implemented yet")
         if update_strategy == "replaces-mode":
             return self._replaces_graph(channel, all_bundles)
-        raise ValueError(f"{self}: unknown updateGraph value: {update_strategy}")
+        raise NotImplementedError(
+            f"{self}: unsupported updateGraph value: {update_strategy}"
+        )
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, self.__class__):
