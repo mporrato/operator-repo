@@ -11,7 +11,7 @@ The old and deprecated package manifest format is not supported.
 
 ### Installation
 
-pip install git+https://whatever
+pip install git+https://github.com/mporrato/operator-repo.git
 
 ### Using the CLI
 
