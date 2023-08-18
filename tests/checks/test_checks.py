@@ -1,11 +1,7 @@
-from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
-import pytest
-
-from operator_repo import Bundle, Repo
+from operator_repo import Bundle
 from operator_repo.checks import Fail, Warn, get_checks, run_check, run_suite
-from tests import bundle_files, create_files
 
 
 def test_check_result() -> None:
@@ -26,11 +22,10 @@ def test_check_result() -> None:
 
 @patch("importlib.import_module")
 def test_get_checks(mock_import_module: MagicMock) -> None:
-    fake_module = MagicMock()
-
-    def check_fake(x):
+    def check_fake(_something):  # type: ignore
         pass
 
+    fake_module = MagicMock()
     fake_module.check_fake = check_fake
     fake_module.non_check_bar = lambda x: None
     mock_import_module.return_value = fake_module
@@ -56,7 +51,7 @@ def test_get_checks_missing_modules(mock_import_module: MagicMock) -> None:
 
 
 def test_run_check(mock_bundle: Bundle) -> None:
-    def check_fake(x):
+    def check_fake(_something):  # type: ignore
         yield Warn("foo")
 
     assert list(run_check(check_fake, mock_bundle)) == [
@@ -66,7 +61,7 @@ def test_run_check(mock_bundle: Bundle) -> None:
 
 @patch("operator_repo.checks.get_checks")
 def test_run_suite(mock_get_checks: MagicMock, mock_bundle: Bundle) -> None:
-    def check_fake(x):
+    def check_fake(_something):  # type: ignore
         yield Warn("foo")
 
     mock_get_checks.return_value = {"bundle": [check_fake], "operator": []}

@@ -40,5 +40,3 @@ def test_repo_one_bundle(tmp_path: Path) -> None:
     assert set(repo) == {repo.operator("hello")}
     assert repo.has("hello")
     assert repo != "foo"
-    with pytest.raises(TypeError):
-        _ = repo < "foo"

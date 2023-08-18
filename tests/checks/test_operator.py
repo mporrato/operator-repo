@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -42,8 +43,8 @@ from tests import bundle_files, create_files
             {"Bundle(hello/0.0.2) has invalid 'replaces' field: 'rubbish'"},
         ),
     ],
-    False,
-    [
+    indirect=False,
+    ids=[
         "Single bundle",
         "Two bundles, no replaces",
         "Two bundles",
@@ -51,7 +52,10 @@ from tests import bundle_files, create_files
     ],
 )
 def test_upgrade(
-    tmp_path: Path, bundles: list[dict], operator_name: str, expected_results: set[str]
+    tmp_path: Path,
+    bundles: list[dict[str, Any]],
+    operator_name: str,
+    expected_results: set[str],
 ) -> None:
     create_files(tmp_path, *bundles)
     repo = Repo(tmp_path)

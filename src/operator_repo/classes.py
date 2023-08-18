@@ -69,6 +69,10 @@ class Bundle:
 
     @cached_property
     def csv_full_name(self) -> tuple[str, str]:
+        """
+        :return: A tuple containging operator name and bundle version
+        extracted from the bundle's csv file
+        """
         try:
             csv_full_name = self.csv["metadata"]["name"]
             name, version = csv_full_name.split(".", 1)
@@ -80,11 +84,17 @@ class Bundle:
 
     @property
     def csv_operator_name(self) -> str:
+        """
+        :return: The operator name from the csv file
+        """
         name, _ = self.csv_full_name
         return name
 
     @property
     def csv_operator_version(self) -> str:
+        """
+        :return: The bundle version from the csv file
+        """
         _, version = self.csv_full_name
         return version
 
@@ -109,7 +119,7 @@ class Bundle:
     @property
     def operator(self) -> "Operator":
         """
-        :return: The operator the bundle belongs to
+        :return: The Operator object the bundle belongs to
         """
         if self._parent is None:
             self._parent = Operator(self._bundle_path.parent)
@@ -168,13 +178,15 @@ class Bundle:
         :return: Default channel for the bundle
         """
         try:
-            return self.annotations[
-                "operators.operatorframework.io.bundle.channel.default.v1"
-            ].strip()
+            return str(
+                self.annotations[
+                    "operators.operatorframework.io.bundle.channel.default.v1"
+                ]
+            ).strip()
         except KeyError:
             return None
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, self.__class__):
             return False
         if self.csv_operator_name != other.csv_operator_name:
@@ -191,10 +203,10 @@ class Bundle:
             )
             return self.csv_operator_version == other.csv_operator_version
 
-    def __ne__(self, other: object) -> bool:
+    def __ne__(self, other: Any) -> bool:
         return not self == other
 
-    def __lt__(self, other: object) -> bool:
+    def __lt__(self, other: Any) -> bool:
         if not isinstance(other, self.__class__):
             raise TypeError(
                 f"< not supported between instances of '{self.__class__.__name__}'"
@@ -214,7 +226,7 @@ class Bundle:
             )
             return self.csv_operator_version < other.csv_operator_version
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.operator_name, self.operator_version))
 
     def __repr__(self) -> str:
@@ -226,6 +238,8 @@ class Bundle:
 @total_ordering
 class Operator:
     """An operator containing a collection of bundles"""
+
+    _bundle_cache: dict[str, Bundle]
 
     def __init__(self, operator_path: Union[str, Path], repo: Optional["Repo"] = None):
         log.debug("Loading operator at %s", operator_path)
@@ -265,6 +279,9 @@ class Operator:
 
     @property
     def repo(self) -> "Repo":
+        """
+        :return: The Repo object the operator belongs to
+        """
         if self._parent is None:
             self._parent = Repo(self._operator_path.parent.parent)
         return self._parent
@@ -327,18 +344,14 @@ class Operator:
         """
         # The default channel for an operator is defined as the default
         # channel of the highest bundle version
-        version_channel_pairs = [
-            (
-                x.csv_operator_version,
-                x.default_channel,
-            )
-            for x in self.all_bundles()
-            if x.default_channel is not None
-        ]
-
         try:
-            version_channel_pairs = [
-                (Version.parse(x), y) for x, y in version_channel_pairs
+            version_channel_pairs: list[tuple[Union[str, Version], str]] = [
+                (
+                    Version.parse(x.csv_operator_version),
+                    x.default_channel,
+                )
+                for x in self.all_bundles()
+                if x.default_channel is not None
             ]
         except ValueError:
             log.warning(
@@ -346,6 +359,14 @@ class Operator:
                 " using lexical order to determine default channel",
                 self,
             )
+            version_channel_pairs = [
+                (
+                    x.csv_operator_version,
+                    x.default_channel,
+                )
+                for x in self.all_bundles()
+                if x.default_channel is not None
+            ]
         try:
             return sorted(version_channel_pairs)[-1][1]
         except IndexError:
@@ -428,15 +449,15 @@ class Operator:
             return self._replaces_graph(channel, all_bundles)
         raise ValueError(f"{self}: unknown updateGraph value: {update_strategy}")
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, self.__class__):
             return False
         return self.operator_name == other.operator_name
 
-    def __ne__(self, other: object) -> bool:
+    def __ne__(self, other: Any) -> bool:
         return not self == other
 
-    def __lt__(self, other: object) -> bool:
+    def __lt__(self, other: Any) -> bool:
         if not isinstance(other, self.__class__):
             raise TypeError(
                 f"Can't compare {self.__class__.__name__} to {other.__class__.__name__}"
@@ -446,7 +467,7 @@ class Operator:
     def __iter__(self) -> Iterator[Bundle]:
         yield from self.all_bundles()
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.operator_name,))
 
     def __repr__(self) -> str:
@@ -455,6 +476,8 @@ class Operator:
 
 class Repo:
     """A repository containing a collection of operators"""
+
+    _operator_cache: dict[str, Operator]
 
     OPERATORS_DIR = "operators"
 
@@ -539,7 +562,7 @@ class Repo:
     def __iter__(self) -> Iterator[Operator]:
         yield from self.all_operators()
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, self.__class__):
             return False
         return self._repo_path == other._repo_path

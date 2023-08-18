@@ -31,4 +31,19 @@ lint = [
     "isort>=5.11.5",
     "pylint>=2.13.9",
     "types-PyYAML>=6.0.12.11",
+    "mypy>=1.5.1",
 ]
+
+[tool.pylint.main]
+ignore-patterns = ["^\\.#"]
+
+[tool.pylint.basic]
+no-docstring-rgx = "^(test)?_"
+
+[tool.pylint."messages control"]
+disable = ["raw-checker-failed", "bad-inline-option", "locally-disabled", "file-ignored", "suppressed-message", "useless-suppression", "deprecated-pragma", "use-symbolic-message-instead", "missing-module-docstring"]
+
+enable = ["c-extension-no-member"]
+
+[tool.pylint.variables]
+ignored-argument-names = "_.*|^ignored_|^unused_"

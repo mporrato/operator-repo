@@ -2,7 +2,7 @@ import importlib
 import logging
 from collections.abc import Callable, Iterable
 from inspect import getmembers, isfunction
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from .. import Bundle, Operator, Repo
 
@@ -10,6 +10,10 @@ log = logging.getLogger(__name__)
 
 
 class CheckResult:
+    """
+    Generic result from a static check
+    """
+
     severity: int = 0
     kind: str = "unknown"
     check: Optional[str]
@@ -26,16 +30,16 @@ class CheckResult:
         self.check = check
         self.reason = reason
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.kind}: {self.check}({self.origin}): {self.reason}"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.kind}({self.check}, {self.origin}, {self.reason})"
 
-    def __int__(self):
+    def __int__(self) -> int:
         return self.severity
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (self.kind, self.reason, self.check, self.origin) == (
             other.kind,
             other.reason,
@@ -43,23 +47,31 @@ class CheckResult:
             other.origin,
         )
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self == other
 
-    def __lt__(self, other):
+    def __lt__(self, other: Any) -> bool:
         return int(self) < int(other)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.kind, self.reason, self.check, self.origin))
 
 
 class Warn(CheckResult):
+    """
+    A non-fatal problem
+    """
+
     # pylint: disable=too-few-public-methods
     severity = 40
     kind = "warning"
 
 
 class Fail(CheckResult):
+    """
+    A critical problem
+    """
+
     # pylint: disable=too-few-public-methods
     severity = 90
     kind = "failure"
@@ -72,7 +84,10 @@ Check = Callable[[Union[Repo, Operator, Bundle]], Iterable[CheckResult]]
 def get_checks(
     suite_name: str = "operator_repo.checks",
 ) -> dict[str, list[Check]]:
-    result = {}
+    """
+    Return all the discovered checks in the given suite, grouped by resource type
+    """
+    result: dict[str, list[Check]] = {}
     for module_name, _ in SUPPORTED_TYPES:
         result[module_name] = []
         try:
@@ -94,6 +109,9 @@ def get_checks(
 def run_check(
     check: Check, target: Union[Repo, Operator, Bundle]
 ) -> Iterable[CheckResult]:
+    """
+    Run a check against a resource yielding all the problems found
+    """
     log.debug("Running %s check on %s", check.__name__, target)
     for result in check(target):
         result.check = check.__name__
@@ -105,6 +123,9 @@ def run_suite(
     targets: Iterable[Union[Repo, Operator, Bundle]],
     suite_name: str = "operator_repo.checks",
 ) -> Iterable[CheckResult]:
+    """
+    Run all the checks in a suite against a collection of resources
+    """
     checks = get_checks(suite_name)
     for target in targets:
         for target_type_name, target_type in SUPPORTED_TYPES:

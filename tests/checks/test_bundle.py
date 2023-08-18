@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Union
+from typing import Any, Union
 
 import pytest
 
@@ -10,7 +10,7 @@ from tests import bundle_files, create_files, make_nested_dict
 
 
 @pytest.mark.parametrize(
-    "bundle, extra_files, expected_results",
+    "base_bundle_files, extra_files, expected_results",
     [
         (
             bundle_files("hello", "0.0.1"),
@@ -37,13 +37,16 @@ from tests import bundle_files, create_files, make_nested_dict
             },
         ),
     ],
-    False,
-    ["Names ok", "Wrong annotations.yaml", "Empty annotations.yaml"],
+    indirect=False,
+    ids=["Names ok", "Wrong annotations.yaml", "Empty annotations.yaml"],
 )
 def test_operator_name(
-    tmp_path: Path, bundle: dict, extra_files: dict, expected_results: set[str]
+    tmp_path: Path,
+    base_bundle_files: dict[str, Any],
+    extra_files: dict[str, Any],
+    expected_results: set[str],
 ) -> None:
-    create_files(tmp_path, bundle, extra_files)
+    create_files(tmp_path, base_bundle_files, extra_files)
     repo = Repo(tmp_path)
     operator = next(repo.all_operators())
     bundle = next(operator.all_bundles())
@@ -51,7 +54,7 @@ def test_operator_name(
 
 
 @pytest.mark.parametrize(
-    "bundle, extra_files, expected_results",
+    "base_bundle_files, extra_files, expected_results",
     [
         (
             bundle_files("hello", "0.0.1"),
@@ -122,11 +125,11 @@ def test_operator_name(
         (
             bundle_files("hello", "0.0.1"),
             {"operators/hello/0.0.1/manifests/hello.clusterserviceversion.yaml": ""},
-            re.compile("Invalid CSV contents "),
+            "Invalid CSV contents ",
         ),
     ],
-    False,
-    [
+    indirect=False,
+    ids=[
         "Missing containerImage",
         "Missing deployments",
         "Matching images",
@@ -136,25 +139,25 @@ def test_operator_name(
 )
 def test_image(
     tmp_path: Path,
-    bundle: dict,
-    extra_files: dict,
-    expected_results: Union[set[str], re.Pattern],
+    base_bundle_files: dict[str, Any],
+    extra_files: dict[str, Any],
+    expected_results: Union[set[str], str],
 ) -> None:
-    create_files(tmp_path, bundle, extra_files)
+    create_files(tmp_path, base_bundle_files, extra_files)
     repo = Repo(tmp_path)
     operator = next(repo.all_operators())
     bundle = next(operator.all_bundles())
     reasons = {x.reason for x in check_image(bundle)}
-    if isinstance(expected_results, re.Pattern):
+    if isinstance(expected_results, str):
         assert len(reasons) == 1
         reason = reasons.pop()
-        assert expected_results.match(reason)
+        assert expected_results in reason
     else:
         assert reasons == expected_results
 
 
 @pytest.mark.parametrize(
-    "bundle, extra_files, expected_results",
+    "base_bundle_files, extra_files, expected_results",
     [
         (
             bundle_files("hello", "0.0.1"),
@@ -170,13 +173,16 @@ def test_image(
             },
         ),
     ],
-    False,
-    ["All versions ok", "Both versions invalid"],
+    indirect=False,
+    ids=["All versions ok", "Both versions invalid"],
 )
 def test_semver(
-    tmp_path: Path, bundle: dict, extra_files: dict, expected_results: set[str]
+    tmp_path: Path,
+    base_bundle_files: dict[str, Any],
+    extra_files: dict[str, Any],
+    expected_results: set[str],
 ) -> None:
-    create_files(tmp_path, bundle, extra_files)
+    create_files(tmp_path, base_bundle_files, extra_files)
     repo = Repo(tmp_path)
     operator = next(repo.all_operators())
     bundle = next(operator.all_bundles())

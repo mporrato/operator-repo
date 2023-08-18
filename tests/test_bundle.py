@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from operator_repo import Bundle, Operator, Repo
+from operator_repo import Bundle, Repo
 from operator_repo.exceptions import InvalidBundleException, InvalidOperatorException
 from tests import bundle_files, create_files
 
@@ -23,9 +23,6 @@ def test_bundle(tmp_path: Path) -> None:
         == "hello"
     )
     assert bundle.dependencies == []
-    assert bundle != "foo"
-    with pytest.raises(TypeError):
-        _ = bundle < "foo"
 
 
 def test_bundle_compare(tmp_path: Path) -> None:
@@ -48,6 +45,9 @@ def test_bundle_compare(tmp_path: Path) -> None:
     assert hello_bundle_1 < hello_bundle_2
     assert hello_bundle_1 != world_bundle_1
     assert hello_bundle_1 < world_bundle_1
+    assert operator_hello.bundle("0.0.1") != operator_hello
+    with pytest.raises(TypeError):
+        _ = operator_hello.bundle("0.0.1") < operator_hello
 
 
 def test_bundle_non_semver(tmp_path: Path) -> None:

@@ -72,12 +72,13 @@ def show(target: Union[Repo, Operator, Bundle], recursive: bool = False) -> None
         show_bundle(target, recursive, 2 * recursive)
 
 
-def action_list(repo_path, *what: str, recursive: bool = False) -> None:
-    repo = Repo(repo_path)
+def action_list(repo: Repo, *what: str, recursive: bool = False) -> None:
     if what:
-        targets = (parse_target(repo, x) for x in what)
+        targets: Iterator[Union[Repo, Operator, Bundle]] = (
+            parse_target(repo, x) for x in what
+        )
     else:
-        targets = [repo]
+        targets = iter([repo])
     for target in targets:
         show(target, recursive)
 
@@ -93,16 +94,17 @@ def _walk(
         yield from target.all_bundles()
 
 
-def action_check(
-    repo_path: Path, suite: str, *what: str, recursive: bool = False
-) -> None:
-    repo = Repo(repo_path)
+def action_check(repo: Repo, suite: str, *what: str, recursive: bool = False) -> None:
     if what:
-        targets = [parse_target(repo, x) for x in what]
+        targets: Iterator[Union[Repo, Operator, Bundle]] = (
+            parse_target(repo, x) for x in what
+        )
     else:
         targets = repo.all_operators()
     if recursive:
-        all_targets = chain.from_iterable(_walk(x) for x in targets)
+        all_targets: Iterator[Union[Repo, Operator, Bundle]] = chain.from_iterable(
+            _walk(x) for x in targets
+        )
     else:
         all_targets = targets
     for result in run_suite(all_targets, suite_name=suite):

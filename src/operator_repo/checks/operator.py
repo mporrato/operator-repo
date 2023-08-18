@@ -6,7 +6,9 @@ from . import CheckResult, Fail
 
 def check_upgrade(operator: Operator) -> Iterator[CheckResult]:
     """Validate upgrade graphs for all channels"""
-    all_channels = operator.channels | {operator.default_channel} - {None}
+    all_channels: set[str] = set(operator.channels)
+    if operator.default_channel is not None:
+        all_channels.add(operator.default_channel)
     for channel in sorted(all_channels):
         try:
             channel_bundles = operator.channel_bundles(channel)
