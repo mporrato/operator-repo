@@ -21,5 +21,5 @@ def check_upgrade(operator: Operator) -> Iterator[CheckResult]:
                 yield Fail(
                     f"Channel {channel} has dangling bundles: {dangling_bundles}"
                 )
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             yield Fail(str(exc))

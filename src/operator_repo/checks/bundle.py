@@ -43,7 +43,7 @@ def check_image(bundle: Bundle) -> Iterator[CheckResult]:
             if any(container_image == x.get("image") for x in containers):
                 return
         yield Fail(f"container image {container_image} not used by any deployment")
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         yield Fail(str(exc))
 
 

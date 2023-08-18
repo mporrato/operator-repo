@@ -40,12 +40,12 @@ def show_operator(operator: Operator, recursive: bool = False, depth: int = 0) -
     print(indent(depth) + str(operator))
     for bundle in operator:
         if recursive:
-            show_bundle(bundle, recursive, depth + 1)
+            show_bundle(bundle, depth + 1)
         else:
             print(indent(depth + 1) + str(bundle))
 
 
-def show_bundle(bundle: Bundle, recursive: bool = False, depth: int = 0) -> None:
+def show_bundle(bundle: Bundle, depth: int = 0) -> None:
     print(indent(depth) + str(bundle))
     csv_annotations = bundle.csv.get("metadata", {}).get("annotations", {})
     info = [
@@ -69,7 +69,7 @@ def show(target: Union[Repo, Operator, Bundle], recursive: bool = False) -> None
     elif isinstance(target, Operator):
         show_operator(target, recursive, 1 * recursive)
     elif isinstance(target, Bundle):
-        show_bundle(target, recursive, 2 * recursive)
+        show_bundle(target, 2 * recursive)
 
 
 def action_list(repo: Repo, *what: str, recursive: bool = False) -> None:
