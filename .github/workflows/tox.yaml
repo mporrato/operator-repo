@@ -1,8 +1,16 @@
 name: Run tox
 
 on:
-  - push
-  - pull_request
+  push:
+    paths-ignore:
+      - README.md
+      - .pre-commit-config.yaml
+      - .gitignore
+  pull_request:
+    paths-ignore:
+      - README.md
+      - .pre-commit-config.yaml
+      - .gitignore
 
 jobs:
   tox:
