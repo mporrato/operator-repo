@@ -15,8 +15,8 @@ pip install git+https://github.com/mporrato/operator-repo.git
 
 ### Using the CLI
 
-The CLI tool is called `optool` accepts an optional `--repo` or `-r` argument pointing to the root directory of a
-repository of operators. If one is not provided, the current directory will be used as the repository root.
+The CLI tool is called `optool`. It accepts an optional `--repo` or `-r` argument pointing to the root directory
+of a repository of operators. If one is not provided, the current directory will be used as the repository root.
 
 #### list (or its alias ls)
 
@@ -30,7 +30,7 @@ when listing the contents.
 
 ##### Examples
 
-```commandline
+```text
 $ optool ls etcd
 Operator(etcd)
   Bundle(etcd/0.6.1)
@@ -38,7 +38,8 @@ Operator(etcd)
   Bundle(etcd/0.9.2)
   Bundle(etcd/0.9.4)
 ```
-```commandline
+
+```text
 $ optool -r ~/operator-repo ls etcd/0.9.4
 Bundle(etcd/0.9.4)
   Description     : Create and maintain highly-available etcd clusters on Kubernetes
@@ -60,10 +61,9 @@ If no suite is specified with the `--suite` (`-s`) option, the built-in `operato
 
 The `--list` (`-l`) option can be used to list the checks contained in the selected suite.
 
-
 ##### Examples
 
-```commandline
+```text
 $ optool check --list
 operator checks:
  - upgrade: Validate upgrade graphs for all channels
@@ -72,11 +72,13 @@ bundle checks:
  - operator_name: Check if the operator names used in CSV, metadata and filesystem are consistent
  - semver: Check that the bundle version is semver compliant
 ```
-```commandline
+
+```text
 $ optool check etcd/0.9.4
 failure: check_operator_name(Bundle(etcd/0.9.4)): Operator name from annotations.yaml (etcd) does not match the name defined in the CSV (etcdoperator)
 ```
-```commandline
+
+```text
 $ optool check -R datadog-operator
 failure: check_image(Bundle(datadog-operator/0.1.3)): container image datadog/operator:v0.1.3 not used by any deployment
 failure: check_image(Bundle(datadog-operator/0.3.1)): container image datadog/operator:0.2.0 not used by any deployment
