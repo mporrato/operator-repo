@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 from .checks import get_checks, run_suite
-from .classes import Bundle, Operator, Repo
+from .core import Bundle, Operator, Repo
 from .exceptions import OperatorRepoException
 
 
