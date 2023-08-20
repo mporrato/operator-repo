@@ -35,6 +35,7 @@ lint = [
     "mypy>=1.5.1",
     "bandit[toml]>=1.7.5",
     "tox-pdm>=0.6.1",
+    "autoflake>=2.2.0",
 ]
 
 [tool.pylint.main]
@@ -52,3 +53,9 @@ ignored-argument-names = "_.*|^ignored_|^unused_"
 
 [tool.bandit]
 exclude_dirs = ["tests", ".tox", ".venv"]
+
+[tool.autoflake]
+recursive = true
+remove-all-unused-imports=true
+remove-duplicate-keys = true
+remove-unused-variables = true
