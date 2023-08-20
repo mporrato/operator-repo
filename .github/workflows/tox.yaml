@@ -23,6 +23,12 @@ jobs:
       uses: pdm-project/setup-pdm@v3
     - name: Install dependencies
       run: pdm install -d -G lint -G test
+    - name: Run autoflake check
+      run: pdm run tox -e autoflake
+    - name: Run isort check
+      run: pdm run tox -e isort
+    - name: Run black check
+      run: pdm run tox -e black
     - name: Run pylint
       run: pdm run tox -e pylint
     - name: Run mypy

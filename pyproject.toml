@@ -38,6 +38,9 @@ lint = [
     "autoflake>=2.2.0",
 ]
 
+[tool.isort]
+profile = "black"
+
 [tool.pylint.main]
 ignore-patterns = ["^\\.#"]
 
