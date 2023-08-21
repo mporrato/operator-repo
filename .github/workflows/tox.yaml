@@ -23,8 +23,18 @@ jobs:
       uses: pdm-project/setup-pdm@v3
     - name: Install dependencies
       run: pdm install -d -G lint -G test
-    - name: Test with tox
-      run: pdm run tox -e pylint,mypy,bandit
+    - name: Run autoflake check
+      run: pdm run tox -e autoflake
+    - name: Run isort check
+      run: pdm run tox -e isort
+    - name: Run black check
+      run: pdm run tox -e black
+    - name: Run pylint
+      run: pdm run tox -e pylint
+    - name: Run mypy
+      run: pdm run tox -e mypy
+    - name: Run bandit
+      run: pdm run tox -e bandit
 
   unit-tests:
     name: Unit tests
@@ -41,5 +51,5 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: pdm install -d -G test
-    - name: Test with tox
+    - name: Run unit tests
       run: pdm run tox
