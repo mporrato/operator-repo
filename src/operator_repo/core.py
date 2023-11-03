@@ -48,14 +48,14 @@ class Bundle:
         """
         :return: The content of the "annotations" field in metadata/annotations.yaml
         """
-        return self.load_metadata("annotations.yaml").get("annotations", {})
+        return self.load_metadata("annotations.yaml").get("annotations", {}) or {}
 
     @cached_property
     def dependencies(self) -> list[Any]:
         """
         :return: The content of the "dependencies" field in metadata/dependencies.yaml
         """
-        return self.load_metadata("dependencies.yaml").get("dependencies", [])
+        return self.load_metadata("dependencies.yaml").get("dependencies", []) or []
 
     @cached_property
     def csv(self) -> dict[str, Any]:

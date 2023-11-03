@@ -39,6 +39,24 @@ def test_get_checks(mock_import_module: MagicMock) -> None:
 
 
 @patch("importlib.import_module")
+def test_get_checks_skip_check(mock_import_module: MagicMock) -> None:
+    def check_fake(_something):  # type: ignore
+        pass
+
+    fake_module = MagicMock()
+    fake_module.check_fake = check_fake
+    fake_module.check_ignore = lambda x: None
+    mock_import_module.return_value = fake_module
+    assert get_checks("suite.name", skip_tests=["check_ignore"]) == {
+        "operator": [check_fake],
+        "bundle": [check_fake],
+    }
+    mock_import_module.assert_has_calls(
+        [call("suite.name.operator"), call("suite.name.bundle")], any_order=True
+    )
+
+
+@patch("importlib.import_module")
 def test_get_checks_missing_modules(mock_import_module: MagicMock) -> None:
     mock_import_module.side_effect = ModuleNotFoundError()
     assert get_checks("suite.name") == {
