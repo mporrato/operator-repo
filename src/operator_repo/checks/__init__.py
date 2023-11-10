@@ -2,7 +2,7 @@ import importlib
 import logging
 from collections.abc import Callable, Iterable
 from inspect import getmembers, isfunction
-from typing import Any, Optional, Union
+from typing import Any, List, Optional, Union
 
 from .. import Bundle, Operator, Repo
 
@@ -84,11 +84,13 @@ Check = Callable[[Union[Repo, Operator, Bundle]], Iterable[CheckResult]]
 
 
 def get_checks(
-    suite_name: str = "operator_repo.checks",
+    suite_name: str = "operator_repo.checks", skip_tests: Optional[List[str]] = None
 ) -> dict[str, list[Check]]:
     """
     Return all the discovered checks in the given suite, grouped by resource type
     """
+    if skip_tests is None:
+        skip_tests = []
     result: dict[str, list[Check]] = {}
     for module_name, _ in SUPPORTED_TYPES:
         result[module_name] = []
@@ -102,6 +104,9 @@ def get_checks(
                         check_name,
                         suite_name,
                     )
+                    if check_name in skip_tests:
+                        log.debug("Skipping %s check", check_name)
+                        continue
                     result[module_name].append(check)
         except ModuleNotFoundError:
             pass
@@ -124,11 +129,12 @@ def run_check(
 def run_suite(
     targets: Iterable[Union[Repo, Operator, Bundle]],
     suite_name: str = "operator_repo.checks",
+    skip_tests: Optional[list[str]] = None,
 ) -> Iterable[CheckResult]:
     """
     Run all the checks in a suite against a collection of resources
     """
-    checks = get_checks(suite_name)
+    checks = get_checks(suite_name, skip_tests=skip_tests)
     for target in targets:
         for target_type_name, target_type in SUPPORTED_TYPES:
             if isinstance(target, target_type):
