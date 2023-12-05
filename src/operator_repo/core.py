@@ -401,7 +401,7 @@ class Operator:
             for replaced_bundle_name in previous:
                 if replaced_bundle_name is None:
                     continue
-                if ".v" not in replaced_bundle_name:
+                if "." not in replaced_bundle_name:
                     raise ValueError(
                         f"{bundle} has invalid 'replaces' field: '{replaced_bundle_name}'"
                     )
