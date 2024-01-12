@@ -22,7 +22,7 @@ def test_repo_no_operators(tmp_path: Path) -> None:
         tmp_path,
         {
             "operators": None,
-            "ci/pipeline-config.yaml": {"hello": "world"},
+            "config.yaml": {"hello": "world"},
         },
     )
     repo = Repo(tmp_path)
