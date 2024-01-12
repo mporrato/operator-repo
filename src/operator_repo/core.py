@@ -493,12 +493,12 @@ class Repo:
     @cached_property
     def config(self) -> Any:
         """
-        :return: The contents of the ci/pipeline-config.yaml for the repo
+        :return: The contents of the config.yaml for the repo
         """
         try:
-            return load_yaml(self._repo_path / "ci" / "pipeline-config.yaml")
+            return load_yaml(self._repo_path / "config.yaml")
         except FileNotFoundError:
-            log.warning("No ci/pipeline-config.yaml found for %s", self)
+            log.warning("No config.yaml found for %s", self)
             return {}
 
     @classmethod

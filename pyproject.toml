@@ -1,6 +1,6 @@
 [project]
 name = "operator-repo"
-version = "0.2.0"
+version = "0.3.0"
 description = "Library and utilities to handle repositories of kubernetes operators"
 authors = [
     {name = "Maurizio Porrato", email = "mporrato@redhat.com"},
@@ -48,7 +48,18 @@ ignore-patterns = ["^\\.#"]
 no-docstring-rgx = "^(test)?_"
 
 [tool.pylint."messages control"]
-disable = ["raw-checker-failed", "bad-inline-option", "locally-disabled", "file-ignored", "suppressed-message", "useless-suppression", "deprecated-pragma", "use-symbolic-message-instead", "missing-module-docstring", "missing-function-docstring"]
+disable = [
+    "raw-checker-failed",
+    "bad-inline-option",
+    "locally-disabled",
+    "file-ignored",
+    "suppressed-message",
+    "useless-suppression",
+    "deprecated-pragma",
+    "use-symbolic-message-instead",
+    "missing-module-docstring",
+    "missing-function-docstring",
+]
 enable = ["c-extension-no-member"]
 
 [tool.pylint.variables]
@@ -59,6 +70,6 @@ exclude_dirs = ["tests", ".tox", ".venv"]
 
 [tool.autoflake]
 recursive = true
-remove-all-unused-imports=true
+remove-all-unused-imports = true
 remove-duplicate-keys = true
 remove-unused-variables = true
