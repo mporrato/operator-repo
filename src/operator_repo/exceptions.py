@@ -17,3 +17,11 @@ class InvalidOperatorException(OperatorRepoException):
 
 class InvalidBundleException(OperatorRepoException):
     """Error caused by an invalid bundle"""
+
+
+class InvalidCatalogException(OperatorRepoException):
+    """Error caused by an invalid catalog"""
+
+
+class InvalidOperatorCatalogException(OperatorRepoException):
+    """Error caused by an invalid operator catalog"""

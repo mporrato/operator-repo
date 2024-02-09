@@ -4,7 +4,7 @@ import pytest
 
 from operator_repo import Repo
 from operator_repo.exceptions import InvalidRepoException
-from tests import bundle_files, create_files
+from tests import bundle_files, catalog_files, create_files
 
 
 def test_repo_non_existent() -> None:
@@ -33,10 +33,13 @@ def test_repo_no_operators(tmp_path: Path) -> None:
 
 
 def test_repo_one_bundle(tmp_path: Path) -> None:
-    create_files(tmp_path, bundle_files("hello", "0.0.1"))
+    create_files(
+        tmp_path, bundle_files("hello", "0.0.1"), catalog_files("v4.14", "hello")
+    )
     repo = Repo(tmp_path)
     assert repo.config == {}
     assert len(list(repo)) == 1
     assert set(repo) == {repo.operator("hello")}
     assert repo.has("hello")
     assert repo != "foo"
+    assert repo.has_catalog("v4.14")

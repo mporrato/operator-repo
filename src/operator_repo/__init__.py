@@ -1,3 +1,3 @@
-from .core import Bundle, Operator, Repo
+from .core import Bundle, Catalog, Operator, OperatorCatalog, Repo
 
-__all__ = ["Repo", "Operator", "Bundle"]
+__all__ = ["Repo", "Operator", "Bundle", "Catalog", "OperatorCatalog"]
