@@ -1,5 +1,5 @@
 """
-    Definition of Repo, Operator and Bundle classes
+    Definition of Repo, Operator, Bundle, Catalog and CatalogOperator classes
 """
 
 import logging
@@ -12,6 +12,8 @@ from semver import Version
 
 from .exceptions import (
     InvalidBundleException,
+    InvalidCatalogException,
+    InvalidOperatorCatalogException,
     InvalidOperatorException,
     InvalidRepoException,
 )
@@ -473,12 +475,213 @@ class Operator:
         return f"{self.__class__.__name__}({self.operator_name})"
 
 
+class OperatorCatalog:
+    """
+    Operator catalog class representing a File Based Catalog for given operator
+    """
+
+    CATALOG_NAMES = ("catalog.yaml", "catalog.yml", "catalog.json")
+
+    def __init__(
+        self,
+        operator_catalog_path: Union[str, Path],
+        catalog: Optional["Catalog"] = None,
+    ):
+        log.debug("Loading operator catalog at %s", operator_catalog_path)
+        self._operator_catalog_path = Path(operator_catalog_path).resolve()
+        if not self.probe(self._operator_catalog_path):
+            raise InvalidOperatorCatalogException(
+                f"Not a valid operator catalog: {self._operator_catalog_path}"
+            )
+        self.operator_name = self._operator_catalog_path.name
+        self._parent = catalog
+
+    @classmethod
+    def probe(cls, path: Path) -> bool:
+        """
+        :return: True if path looks like an operator catalog
+        """
+        if not path.is_dir():
+            return False
+        file_names = {file.name for file in path.iterdir()}
+        return path.is_dir() and bool(file_names & set(cls.CATALOG_NAMES))
+
+    @property
+    def root(self) -> Path:
+        """
+        :return: The path to the root of the operator catalog
+        """
+        return self._operator_catalog_path
+
+    @property
+    def repo(self) -> "Repo":
+        """
+        :return: The Repo object the operator belongs to
+        """
+        return self.catalog.repo
+
+    @property
+    def catalog(self) -> "Catalog":
+        """
+        :return: The Catalog object the operator belongs to
+        """
+        if self._parent is None:
+            self._parent = Catalog(self._operator_catalog_path.parent)
+        return self._parent
+
+    @property
+    def catalog_content_path(
+        self,
+    ) -> Path:
+        """
+        Return the path where a catalog with the given
+        name would be located
+        :param catalog_name: Name of the catalog
+        :return: Path to the catalog
+        """
+        file_names = {file.name for file in self._operator_catalog_path.iterdir()}
+        catalog_name = file_names & set(self.CATALOG_NAMES)
+        return self._operator_catalog_path / list(catalog_name)[0]
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return False
+        return self.operator_name == other.operator_name
+
+    def __ne__(self, other: Any) -> bool:
+        return not self == other
+
+    def __lt__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            raise TypeError(
+                f"Can't compare {self.__class__.__name__} to {other.__class__.__name__}"
+            )
+        return self.operator_name < other.operator_name
+
+    def __hash__(self) -> int:
+        return hash((self.operator_name,))
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.operator_name})"
+
+
+class Catalog:
+    """
+    Catalog class representing a File Based Catalog of specific version.
+    A Repo can contain multiple Catalogs: for example one Catalog per OpenShift version.
+    An Operator can be published to one or more of the Catalogs of the
+    Repo it belongs to.
+    """
+
+    CATALOG_DIR = "catalogs"
+
+    def __init__(self, catalog_path: Union[str, Path], repo: Optional["Repo"] = None):
+        log.debug("Loading catalog at %s", catalog_path)
+        self._catalog_path = Path(catalog_path).resolve()
+        if not self.probe(self._catalog_path):
+            raise InvalidCatalogException(f"Not a valid catalog: {self._catalog_path}")
+        self.catalog_name = self._catalog_path.name
+        self._parent = repo
+        self._operator_catalog_cache: dict[str, OperatorCatalog] = {}
+
+    @classmethod
+    def probe(cls, path: Path) -> bool:
+        """
+        :return: True if path looks like an catalog
+        """
+        return path.is_dir() and any(OperatorCatalog.probe(x) for x in path.iterdir())
+
+    @property
+    def root(self) -> Path:
+        """
+        :return: The path to the root of the catalog
+        """
+        return self._catalog_path
+
+    @property
+    def repo(self) -> "Repo":
+        """
+        :return: The Repo object the operator belongs to
+        """
+        if self._parent is None:
+            self._parent = Repo(self._catalog_path.parent.parent)
+        return self._parent
+
+    def all_operator_catalogs(self) -> Iterator[OperatorCatalog]:
+        """
+        :return: All the operator catalogs in the catalog
+        """
+        for operator_catalog_path in self._catalog_path.iterdir():
+            try:
+                yield self._operator_catalog_cache[operator_catalog_path.name]
+            except KeyError:
+                if OperatorCatalog.probe(operator_catalog_path):
+                    yield self.operator_catalog(operator_catalog_path.name)
+
+    def operator_catalog_path(self, operator_name: str) -> Path:
+        """
+        Return the path where an operator catalog with the given
+        name would be located
+        :param operator_name: Name of the operator
+        :return: Path to the operator catalog
+        """
+        return self._catalog_path / operator_name
+
+    def operator_catalog(self, operator_name: str) -> OperatorCatalog:
+        """
+        Load the operator catalog with the given name
+        :param operator_name: Name of the operator
+        :return: The loaded operator catalog
+        """
+        try:
+            return self._operator_catalog_cache[operator_name]
+        except KeyError:
+            operator_catalog = OperatorCatalog(
+                self.operator_catalog_path(operator_name), self
+            )
+            self._operator_catalog_cache[operator_name] = operator_catalog
+            return operator_catalog
+
+    def has(self, operator_name: str) -> bool:
+        """
+        Check if the catalog contains an operatorcatalog with the given name
+        :param operator_name: Name of the operator to look for
+        :return: True if the repo contains an operator with the given name
+        """
+        return operator_name in self._operator_catalog_cache or OperatorCatalog.probe(
+            self.operator_catalog_path(operator_name)
+        )
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return False
+        return self.catalog_name == other.catalog_name
+
+    def __ne__(self, other: Any) -> bool:
+        return not self == other
+
+    def __lt__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            raise TypeError(
+                f"Can't compare {self.__class__.__name__} to {other.__class__.__name__}"
+            )
+        return self.catalog_name < other.catalog_name
+
+    def __iter__(self) -> Iterator[OperatorCatalog]:
+        yield from self.all_operator_catalogs()
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.catalog_name})"
+
+
 class Repo:
     """A repository containing a collection of operators"""
 
     _operator_cache: dict[str, Operator]
+    _catalog_cache: dict[str, Catalog]
 
     OPERATORS_DIR = "operators"
+    CATALOGS_DIR = "catalogs"
 
     def __init__(self, repo_path: Union[str, Path]):
         log.debug("Loading repo at %s", repo_path)
@@ -488,7 +691,10 @@ class Repo:
                 f"Not a valid operator repository: {self._repo_path}"
             )
         self._operators_path = self._repo_path / self.OPERATORS_DIR
+        self._catalogs_path = self._repo_path / self.CATALOGS_DIR
+
         self._operator_cache = {}
+        self._catalog_cache = {}
 
     @cached_property
     def config(self) -> Any:
@@ -514,6 +720,43 @@ class Repo:
         :return: The path to the root of the repository
         """
         return self._repo_path
+
+    def all_catalogs(self) -> Iterator[Catalog]:
+        """
+        :return: All the catalogs in the repo
+        """
+        if not self._catalogs_path.is_dir():
+            return
+        for catalog_path in self._catalogs_path.iterdir():
+            try:
+                yield self._catalog_cache[catalog_path.name]
+            except KeyError:
+                if Catalog.probe(catalog_path):
+                    yield self.catalog(catalog_path.name)
+                else:
+                    print(f"Catalog {catalog_path.name} is not valid")
+
+    def catalog_path(self, catalog_name: str) -> Path:
+        """
+        Return the path where a catalog with the given
+        name would be located
+        :param catalog_name: Name of the catalog
+        :return: Path to the catalog
+        """
+        return self._catalogs_path / catalog_name
+
+    def catalog(self, catalog_name: str) -> Catalog:
+        """
+        Load the catalog with the given name
+        :param catalog_name: Name of the catalog
+        :return: The loaded catalog
+        """
+        try:
+            return self._catalog_cache[catalog_name]
+        except KeyError:
+            catalog = Catalog(self.catalog_path(catalog_name), self)
+            self._catalog_cache[catalog_name] = catalog
+            return catalog
 
     def all_operators(self) -> Iterator[Operator]:
         """
@@ -556,6 +799,16 @@ class Repo:
         """
         return operator_name in self._operator_cache or Operator.probe(
             self.operator_path(operator_name)
+        )
+
+    def has_catalog(self, catalog_name: str) -> bool:
+        """
+        Check if the repo contains a catalog with the given name
+        :param catalog_name: Name of the catalog to look for
+        :return: True if the repo contains a catalog with the given name
+        """
+        return catalog_name in self._catalog_cache or Catalog.probe(
+            self.catalog_path(catalog_name)
         )
 
     def __iter__(self) -> Iterator[Operator]:

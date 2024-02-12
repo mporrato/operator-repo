@@ -90,6 +90,19 @@ def create_files(path: Union[str, Path], *contents: dict[str, Any]) -> None:
                     full_path.write_text(yaml.safe_dump(content))
 
 
+def catalog_files(
+    catalog_name: str, operator: str, other_files: Optional[dict[str, Any]] = None
+) -> dict[str, Any]:
+    operator_path = f"catalogs/{catalog_name}/{operator}"
+
+    return merge(
+        {
+            f"{operator_path}/catalog.yaml": {"foo": "bar"},
+        },
+        other_files or {},
+    )
+
+
 def bundle_files(
     operator_name: str,
     bundle_version: str,
