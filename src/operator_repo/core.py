@@ -288,6 +288,14 @@ class Operator:
             self._parent = Repo(self._operator_path.parent.parent)
         return self._parent
 
+    def all_catalogs(self) -> Iterator["Catalog"]:
+        """
+        :return: All the catalogs containing the operator
+        """
+        for catalog in self.repo.all_catalogs():
+            if catalog.has(self.operator_name):
+                yield catalog
+
     def all_bundles(self) -> Iterator[Bundle]:
         """
         :return: All the bundles for the operator
@@ -528,6 +536,13 @@ class OperatorCatalog:
         if self._parent is None:
             self._parent = Catalog(self._operator_catalog_path.parent)
         return self._parent
+
+    @property
+    def operator(self) -> "Operator":
+        """
+        :return: The Operator object the operator catalog belongs to
+        """
+        return self.repo.operator(self.operator_name)
 
     @property
     def catalog_content_path(
