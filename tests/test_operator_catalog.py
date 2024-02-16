@@ -22,24 +22,31 @@ def test_operator_catalog(tmp_path: Path) -> None:
     create_files(
         tmp_path,
         catalog_files("v4.14", "fake-operator"),
+        catalog_files("v4.13", "fake-operator-2"),
         bundle_files("fake-operator", "0.0.1"),
     )
     repo = Repo(tmp_path)
     catalog = repo.catalog("v4.14")
     assert len(list(catalog.all_operator_catalogs())) == 1
-    operator = catalog.operator_catalog("fake-operator")
+    operator_catalog = catalog.operator_catalog("fake-operator")
 
-    assert repr(operator) == "OperatorCatalog(fake-operator)"
+    assert repr(operator_catalog) == "OperatorCatalog(fake-operator)"
 
-    assert operator.repo == repo
-    assert operator.catalog == catalog
+    assert operator_catalog.repo == repo
+    assert operator_catalog.catalog == catalog
 
-    assert operator.catalog_content_path == operator.root / "catalog.yaml"
+    assert (
+        operator_catalog.catalog_content_path == operator_catalog.root / "catalog.yaml"
+    )
 
-    assert operator == catalog.operator_catalog("fake-operator")
+    assert operator_catalog == catalog.operator_catalog("fake-operator")
 
-    operator = OperatorCatalog(operator.root)
-    assert operator.catalog == catalog
+    operator_catalog = OperatorCatalog(operator_catalog.root)
+    assert operator_catalog.catalog == catalog
+
+    assert operator_catalog.operator == repo.operator("fake-operator")
+
+    assert list(repo.operator("fake-operator").all_catalogs()) == [catalog]
 
 
 def test_catalog_operator_compare(tmp_path: Path) -> None:
