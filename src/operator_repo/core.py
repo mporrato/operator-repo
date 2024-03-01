@@ -243,6 +243,8 @@ class Operator:
 
     _bundle_cache: dict[str, Bundle]
 
+    CONFIG_FILE = "ci.yaml"
+
     def __init__(self, operator_path: Union[str, Path], repo: Optional["Repo"] = None):
         log.debug("Loading operator at %s", operator_path)
         self._operator_path = Path(operator_path).resolve()
@@ -260,7 +262,7 @@ class Operator:
         :return: The contents of the ci.yaml for the operator
         """
         try:
-            return load_yaml(self._operator_path / "ci.yaml")
+            return load_yaml(self._operator_path / self.CONFIG_FILE)
         except FileNotFoundError:
             log.info("No ci.yaml found for %s", self)
             return {}
@@ -270,7 +272,12 @@ class Operator:
         """
         :return: True if path looks like an operator
         """
-        return path.is_dir() and any(Bundle.probe(x) for x in path.iterdir())
+        return path.is_dir() and (
+            # At least one bundle or a ci.yaml file is required to consider
+            # a directory an operator
+            any(Bundle.probe(x) for x in path.iterdir())
+            or (path / cls.CONFIG_FILE).is_file()
+        )
 
     @property
     def root(self) -> Path:
@@ -389,12 +396,13 @@ class Operator:
         """
         return sorted({x for x in self.all_bundles() if channel in x.channels})
 
-    def head(self, channel: str) -> Bundle:
+    def head(self, channel: str) -> Optional[Bundle]:
         """
         :param channel: Name of the channel
         :return: Head of the channel
         """
-        return self.channel_bundles(channel)[-1]
+        channel_bundles = self.channel_bundles(channel)
+        return None if not channel_bundles else channel_bundles[-1]
 
     @staticmethod
     def _replaces_graph(

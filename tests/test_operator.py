@@ -12,6 +12,14 @@ def test_operator_empty(tmp_path: Path) -> None:
     assert not repo.has("hello")
 
 
+def test_operator_no_bundles(tmp_path: Path) -> None:
+    create_files(tmp_path, {"operators/hello/ci.yaml": "hello"})
+    repo = Repo(tmp_path)
+    assert repo.has("hello")
+
+    assert repo.operator("hello").head("beta") is None
+
+
 def test_operator_one_bundle(tmp_path: Path) -> None:
     create_files(tmp_path, bundle_files("hello", "0.0.1"))
     repo = Repo(tmp_path)
