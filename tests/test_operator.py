@@ -117,12 +117,17 @@ def test_update_graph_invalid_replaces(tmp_path: Path) -> None:
     create_files(
         tmp_path,
         bundle_files("hello", "0.0.1"),
+        # To avoid erroring out on old bundles with inconsistent operator name
+        # we ignore the operator name when creating the update graph and assume
+        # all bundles within the same operator directory belong to the same operator
         bundle_files("hello", "0.0.2", csv={"spec": {"replaces": "other.v0.0.1"}}),
     )
     repo = Repo(tmp_path)
     operator = repo.operator("hello")
-    with pytest.raises(ValueError, match="replaces a bundle from a different operator"):
-        _ = operator.update_graph("beta")
+    update = operator.update_graph("beta")
+    bundle1 = operator.bundle("0.0.1")
+    bundle2 = operator.bundle("0.0.2")
+    assert update[bundle1] == {bundle2}
 
 
 def test_update_graph_replaces_missing_bundle(tmp_path: Path) -> None:
@@ -139,12 +144,17 @@ def test_update_graph_invalid_operator_name(tmp_path: Path) -> None:
     create_files(
         tmp_path,
         bundle_files("hello", "0.0.1", csv={"metadata": {"name": "other.v0.0.1"}}),
+        # To avoid erroring out on old bundles with inconsistent operator name
+        # we ignore the operator name when creating the update graph and assume
+        # all bundles within the same operator directory belong to the same operator
         bundle_files("hello", "0.0.2", csv={"spec": {"replaces": "hello.v0.0.1"}}),
     )
     repo = Repo(tmp_path)
     operator = repo.operator("hello")
-    with pytest.raises(ValueError, match="has bundles with different operator names"):
-        _ = operator.update_graph("beta")
+    update = operator.update_graph("beta")
+    bundle1 = operator.bundle("0.0.1")
+    bundle2 = operator.bundle("0.0.2")
+    assert update[bundle1] == {bundle2}
 
 
 def test_update_graph_semver(tmp_path: Path) -> None:

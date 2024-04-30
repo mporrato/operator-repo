@@ -423,14 +423,7 @@ class Operator:
                     raise ValueError(
                         f"{bundle} has invalid 'replaces' field: '{replaced_bundle_name}'"
                     )
-                (
-                    replaced_bundle_operator,
-                    replaced_bundle_version,
-                ) = replaced_bundle_name.split(".", 1)
-                if replaced_bundle_operator != bundle.csv_operator_name:
-                    raise ValueError(
-                        f"{bundle} replaces a bundle from a different operator"
-                    )
+                replaced_bundle_version = replaced_bundle_name.split(".", 1)[1]
                 try:
                     replaced_bundle = version_to_bundle[
                         replaced_bundle_version.lstrip("v")
@@ -453,11 +446,6 @@ class Operator:
         """
         all_bundles = self.channel_bundles(channel)
         update_strategy = self.config.get("updateGraph", "replaces-mode")
-        operator_names = {x.csv_operator_name for x in all_bundles}
-        if len(operator_names) > 1:
-            raise ValueError(
-                f"{self} has bundles with different operator names: {operator_names}"
-            )
         if update_strategy == "semver-mode":
             return {x: {y} for x, y in zip(all_bundles, all_bundles[1:])}
         if update_strategy == "replaces-mode":
