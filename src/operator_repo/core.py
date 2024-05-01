@@ -69,6 +69,15 @@ class Bundle:
             raise InvalidBundleException(f"Invalid CSV contents ({self.csv_file_name})")
         return csv
 
+    @property
+    def metadata_operator_name(self) -> str:
+        """
+        :return: The operator name as defined in the annotations file
+        """
+        return str(
+            self.annotations.get("operators.operatorframework.io.bundle.package.v1", "")
+        )
+
     @cached_property
     def csv_full_name(self) -> tuple[str, str]:
         """
