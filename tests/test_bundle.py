@@ -82,9 +82,7 @@ def test_bundle_invalid(tmp_path: Path) -> None:
         },
         bundle_files("invalid_metadata_contents", "0.0.1"),
         {
-            "operators/invalid_metadata_contents/0.0.1/metadata/annotations.yaml": [
-                "invalid"
-            ],
+            "operators/invalid_metadata_contents/0.0.1/metadata/annotations.yaml": [],
         },
         bundle_files("empty_metadata", "0.0.1"),
         {

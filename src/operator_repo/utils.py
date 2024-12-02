@@ -4,7 +4,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import yaml
 from yaml.composer import ComposerError
@@ -110,7 +110,7 @@ def load_yaml(path: Path) -> Any:
     return _load_yaml_strict(_find_yaml(path))
 
 
-def _load_multidoc_yaml_strict(path: Path) -> List[Dict[str, Any]]:
+def _load_multidoc_yaml_strict(path: Path) -> list[Any]:
     """
     Load and parse the content of a multi-doc YAML file at the given path.
 
@@ -122,7 +122,7 @@ def _load_multidoc_yaml_strict(path: Path) -> List[Dict[str, Any]]:
         path (Path): The path to the YAML file to be loaded.
 
     Returns:
-        list[dict[str, Any]]: The parsed contents of the multi-doc YAML file.
+        list[Any]: The parsed contents of the multi-doc YAML file.
 
     Raises:
         OperatorRepoException: If the YAML file is not a valid YAML document.
@@ -140,7 +140,7 @@ def _load_multidoc_yaml_strict(path: Path) -> List[Dict[str, Any]]:
             raise OperatorRepoException(f"{path} is not a valid yaml document") from exc
 
 
-def load_multidoc_yaml(path: Path) -> List[Dict[str, Any]]:
+def load_multidoc_yaml(path: Path) -> list[dict[str, Any]]:
     """
     Load and parse the contents of a YAML file at the given path.
 
@@ -148,7 +148,10 @@ def load_multidoc_yaml(path: Path) -> List[Dict[str, Any]]:
         path (Path): The path to the file with or without a YAML extension.
 
     Returns:
-        list[dict[str, Any]]: The parsed contents of the YAML file.
+        list[Any]: The parsed contents of the YAML file. Each element in the list
+            represents a document in the multi-doc YAML file. Be aware that the
+            elements are not guaranteed to be specific types. They can be any valid
+            YAML document - a dictionary, a list, a string, etc.
 
     Raises:
         OperatorRepoException: If the YAML file is not a valid YAML document.

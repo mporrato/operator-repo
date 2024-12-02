@@ -40,7 +40,7 @@ def test_load_yaml_invalid(tmp_path: Path) -> None:
 def test_load_multidoc_yaml(tmp_path: Path) -> None:
     create_files(
         tmp_path,
-        {"data/all.yml": [{"hello": "world"}, {"ciao": "mondo"}]},
+        {"data/all.yml": ({"hello": "world"}, {"ciao": "mondo"})},
     )
     assert load_multidoc_yaml(tmp_path / "data/all.yaml") == [
         {"hello": "world"},

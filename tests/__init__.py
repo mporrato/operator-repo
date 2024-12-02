@@ -58,6 +58,8 @@ def create_files(path: Union[str, Path], *contents: dict[str, Any]) -> None:
             For files, the dictionary should have a single key-value pair where the key is
             the filename and the value is the content of the file. For directories, the
             dictionary should have a single key with a value of None.
+            To create a multi-document yaml file, the content value should be a tuple.
+            Each value of the tuple will be a separate document in the resulting yaml file.
 
     Returns:
         None
@@ -68,11 +70,13 @@ def create_files(path: Union[str, Path], *contents: dict[str, Any]) -> None:
             {"file1.txt": "Hello, World!"},
             {"subfolder": None},
             {"config.yaml": {"key": "value"}},
+            {"catalog.yaml": ({"foo": "bar"}, {"baz": "qux"})}
         )
 
     In this example, the function will create a file "file1.txt" with content "Hello, World!"
-    in the "/my_folder" directory, create an empty subdirectory "subfolder", and create a
-    file "config.yaml" with the specified YAML content.
+    in the "/my_folder" directory, create an empty subdirectory "subfolder", create
+    a file "config.yaml" with the specified YAML content and create a multi-document YAML
+    file "catalog.yaml" with two documents.
     """
     root = Path(path)
     for element in contents:
@@ -86,7 +90,7 @@ def create_files(path: Union[str, Path], *contents: dict[str, Any]) -> None:
                     full_path.write_text(content)
                 elif isinstance(content, bytes):
                     full_path.write_bytes(content)
-                elif isinstance(content, list):
+                elif isinstance(content, tuple):
                     full_path.write_text(yaml.safe_dump_all(content))
                 else:
                     full_path.write_text(yaml.safe_dump(content))
