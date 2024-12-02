@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from operator_repo import Bundle, Repo
-from tests import bundle_files, create_files
+from tests import bundle_files, catalog_files, create_files
 
 
 @pytest.fixture
@@ -29,6 +29,8 @@ def mock_repo(tmp_path: Path) -> Repo:
         bundle_files("hello", "0.0.2"),
         bundle_files("world", "0.0.1"),
         bundle_files("world", "0.0.2"),
+        catalog_files("v4.17", "hello"),
+        catalog_files("v4.18", "hello"),
     )
     repo = Repo(tmp_path)
     return repo

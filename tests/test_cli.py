@@ -23,6 +23,8 @@ def test_cli_list(mock_repo: Repo, capsys: CaptureFixture[str]) -> None:
     captured = capsys.readouterr()
     assert "hello/0.0.1" in captured.out
     assert "hello/0.0.2" in captured.out
+    assert "v4.17/hello" in captured.out
+    assert "v4.18/hello" in captured.out
 
 
 def test_cli_list_repo(mock_repo: Repo, capsys: CaptureFixture[str]) -> None:

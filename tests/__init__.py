@@ -86,6 +86,8 @@ def create_files(path: Union[str, Path], *contents: dict[str, Any]) -> None:
                     full_path.write_text(content)
                 elif isinstance(content, bytes):
                     full_path.write_bytes(content)
+                elif isinstance(content, list):
+                    full_path.write_text(yaml.safe_dump_all(content))
                 else:
                     full_path.write_text(yaml.safe_dump(content))
 

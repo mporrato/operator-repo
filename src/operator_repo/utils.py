@@ -4,7 +4,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List
 
 import yaml
 from yaml.composer import ComposerError
@@ -108,6 +108,58 @@ def load_yaml(path: Path) -> Any:
         # will be stored in the `yaml_content` variable.
     """
     return _load_yaml_strict(_find_yaml(path))
+
+
+def _load_multidoc_yaml_strict(path: Path) -> List[Dict[str, Any]]:
+    """
+    Load and parse the content of a multi-doc YAML file at the given path.
+
+    This function reads the contents of the specified YAML file and attempts to parse it
+    using the `yaml.safe_load_all` method. If the YAML document is not a valid
+    YAML document, exceptions is raised.
+
+    Args:
+        path (Path): The path to the YAML file to be loaded.
+
+    Returns:
+        list[dict[str, Any]]: The parsed contents of the multi-doc YAML file.
+
+    Raises:
+        OperatorRepoException: If the YAML file is not a valid YAML document.
+
+    Example:
+        yaml_path = Path("my_file.yaml")
+        yaml_content = _load_multidoc_yaml_strict(yaml_path)
+        # The parsed contents of the YAML file will be stored in the `yaml_content` variable.
+    """
+    log.debug("Loading %s", path)
+    with path.open("r") as yaml_file:
+        try:
+            return list(yaml.safe_load_all(yaml_file))
+        except ParserError as exc:
+            raise OperatorRepoException(f"{path} is not a valid yaml document") from exc
+
+
+def load_multidoc_yaml(path: Path) -> List[Dict[str, Any]]:
+    """
+    Load and parse the contents of a YAML file at the given path.
+
+    Args:
+        path (Path): The path to the file with or without a YAML extension.
+
+    Returns:
+        list[dict[str, Any]]: The parsed contents of the YAML file.
+
+    Raises:
+        OperatorRepoException: If the YAML file is not a valid YAML document.
+
+    Example:
+        file_path = Path("my_file.json")
+        yaml_content = load_yaml(file_path)
+        # If "my_file.yaml" or "my_file.yml" exists, the parsed contents of the YAML file
+        # will be stored in the `yaml_content` variable.
+    """
+    return _load_multidoc_yaml_strict(_find_yaml(path))
 
 
 def lookup_dict(
