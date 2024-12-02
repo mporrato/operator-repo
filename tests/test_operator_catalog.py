@@ -30,7 +30,7 @@ def test_operator_catalog(tmp_path: Path) -> None:
     assert len(list(catalog.all_operator_catalogs())) == 1
     operator_catalog = catalog.operator_catalog("fake-operator")
 
-    assert repr(operator_catalog) == "OperatorCatalog(fake-operator)"
+    assert repr(operator_catalog) == "OperatorCatalog(v4.14/fake-operator)"
 
     assert operator_catalog.repo == repo
     assert operator_catalog.catalog == catalog
@@ -38,6 +38,8 @@ def test_operator_catalog(tmp_path: Path) -> None:
     assert (
         operator_catalog.catalog_content_path == operator_catalog.root / "catalog.yaml"
     )
+
+    assert operator_catalog.catalog_content == [{"foo": "bar"}]
 
     assert operator_catalog == catalog.operator_catalog("fake-operator")
 

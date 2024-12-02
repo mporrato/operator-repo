@@ -17,7 +17,7 @@ from .exceptions import (
     InvalidOperatorException,
     InvalidRepoException,
 )
-from .utils import load_yaml
+from .utils import load_multidoc_yaml, load_yaml
 
 log = logging.getLogger(__name__)
 
@@ -312,6 +312,14 @@ class Operator:
             if catalog.has(self.operator_name):
                 yield catalog
 
+    def all_operator_catalogs(self) -> Iterator["OperatorCatalog"]:
+        """
+        :return: All operator catalogs
+        """
+        for catalog in self.repo.all_catalogs():
+            if catalog.has(self.operator_name):
+                yield catalog.operator_catalog(self.operator_name)
+
     def all_bundles(self) -> Iterator[Bundle]:
         """
         :return: All the bundles for the operator
@@ -563,6 +571,19 @@ class OperatorCatalog:
         catalog_name = file_names & set(self.CATALOG_NAMES)
         return self._operator_catalog_path / list(catalog_name)[0]
 
+    @property
+    def catalog_content(self) -> list[dict[str, Any]]:
+        """
+        Return the catalog content.
+
+        Catalog is represented as a multi document yaml file,
+        therefore the content is represented as a list of dictionaries
+        where each dictionary represents single document in the yaml file.
+
+        :return: The list of dictionaries representing the catalog content
+        """
+        return load_multidoc_yaml(self.catalog_content_path)
+
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, self.__class__):
             return False
@@ -582,7 +603,10 @@ class OperatorCatalog:
         return hash((self.operator_name,))
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.operator_name})"
+        return (
+            f"{self.__class__.__name__}"
+            f"({self._parent.catalog_name + '/' if self._parent else ''}{self.operator_name})"
+        )
 
 
 class Catalog:

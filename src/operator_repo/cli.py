@@ -43,6 +43,9 @@ def show_operator(operator: Operator, recursive: bool = False, depth: int = 0) -
             show_bundle(bundle, depth + 1)
         else:
             print(indent(depth + 1) + str(bundle))
+    # list also the operator catalogs if exist
+    for operator_catalog in operator.all_operator_catalogs():
+        print(indent(depth + 1) + str(operator_catalog))
 
 
 def show_bundle(bundle: Bundle, depth: int = 0) -> None:
