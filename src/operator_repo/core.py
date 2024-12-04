@@ -4,9 +4,10 @@
 
 import logging
 from collections.abc import Iterator
+from dataclasses import dataclass
 from functools import cached_property, total_ordering
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional, SupportsIndex, Union
 
 from semver import Version
 
@@ -558,6 +559,16 @@ class OperatorCatalog:
         return self.repo.operator(self.operator_name)
 
     @property
+    def operator_catalog_name(self) -> str:
+        """
+        :return: The operator catalog name combining the catalog name
+            and the operator name eg.: 'v4.12/operator-x'
+        """
+        return (
+            self._parent.catalog_name + "/" if self._parent else ""
+        ) + self.operator_name
+
+    @property
     def catalog_content_path(
         self,
     ) -> Path:
@@ -585,6 +596,8 @@ class OperatorCatalog:
         return load_multidoc_yaml(self.catalog_content_path)
 
     def __eq__(self, other: Any) -> bool:
+        if isinstance(other, str):
+            return self.operator_catalog_name == other
         if not isinstance(other, self.__class__):
             return False
         return self.operator_name == other.operator_name
@@ -603,10 +616,49 @@ class OperatorCatalog:
         return hash((self.operator_name,))
 
     def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}"
-            f"({self._parent.catalog_name + '/' if self._parent else ''}{self.operator_name})"
-        )
+        return f"{self.__class__.__name__}({self.operator_catalog_name})"
+
+
+@dataclass
+class OperatorCatalogList(list[OperatorCatalog]):
+    """
+    A list of operator catalogs
+    """
+
+    def __init__(self, operator_catalogs: list[OperatorCatalog] | None = None):
+        if operator_catalogs is None:
+            operator_catalogs = []
+        if any(not isinstance(item, OperatorCatalog) for item in operator_catalogs):
+            raise TypeError("All items must be instances of OperatorCatalog")
+        super().__init__(list(set(operator_catalogs)))  # only unique items
+
+    def append(self, item: Any) -> None:
+        if not isinstance(item, OperatorCatalog):
+            raise TypeError(
+                f"Only instances of OperatorCatalog are allowed, got {type(item).__name__}"
+            )
+        if item in self:
+            raise ValueError(f"Duplicate items are not allowed: {item}")
+        super().append(item)
+
+    def extend(self, items: Any) -> None:
+        if any(not isinstance(item, OperatorCatalog) for item in items):
+            raise TypeError("All items must be instances of OperatorCatalog")
+        if any(item in self for item in items):
+            raise ValueError("Duplicate items are not allowed")
+        super().extend(items)
+
+    def insert(self, index: SupportsIndex, item: Any) -> None:
+        if not isinstance(item, OperatorCatalog):
+            raise TypeError(
+                f"Only instances of OperatorCatalog are allowed, got {type(item).__name__}"
+            )
+        if item in self:
+            raise ValueError(f"Duplicate items are not allowed: {item}")
+        super().insert(index, item)
+
+    def __repr__(self) -> str:
+        return f"{list(self.__iter__())}"
 
 
 class Catalog:
