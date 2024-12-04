@@ -81,7 +81,7 @@ class Fail(CheckResult):
 
 SUPPORTED_TYPES = [
     ("operator", Operator),
-    ("fbc", OperatorCatalogList),
+    ("catalog", OperatorCatalogList),
     ("bundle", Bundle),
 ]
 Check = Callable[
