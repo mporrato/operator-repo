@@ -97,13 +97,16 @@ def create_files(path: Union[str, Path], *contents: dict[str, Any]) -> None:
 
 
 def catalog_files(
-    catalog_name: str, operator: str, other_files: Optional[dict[str, Any]] = None
+    catalog_name: str,
+    operator: str,
+    other_files: Optional[dict[str, Any]] = None,
+    content: Any = None,
 ) -> dict[str, Any]:
     operator_path = f"catalogs/{catalog_name}/{operator}"
-
+    catalog_content = content or {"foo": "bar"}
     return merge(
         {
-            f"{operator_path}/catalog.yaml": {"foo": "bar"},
+            f"{operator_path}/catalog.yaml": catalog_content,
         },
         other_files or {},
     )

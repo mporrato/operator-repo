@@ -36,19 +36,16 @@ def check_bundle_images_in_fbc(
 
     allowed_registries = None
     for catalog in operator_catalogs:
-        try:
-            if not isinstance(allowed_registries, list):
-                # get config only once
-                allowed_registries = catalog.repo.config.get("allowed_registries", [])
-            if not allowed_registries:
-                # nothing to check if no registry restriction is defined
-                break
-            bundle_images = _get_bundle_registries_from_catalog(catalog)
-            invalid_images = _filter_invalid_images(bundle_images, allowed_registries)
-            if invalid_images:
-                yield Fail(
-                    f"Invalid bundle image(s) found in catalog {str(catalog)}: "
-                    f"{', '.join(invalid_images)}"
-                )
-        except Exception as exc:  # pylint: disable=broad-exception-caught
-            yield Fail(str(exc))
+        if not isinstance(allowed_registries, list):
+            # get config only once
+            allowed_registries = catalog.repo.config.get("allowed_registries", [])
+        if not allowed_registries:
+            # nothing to check if no registry restriction is defined
+            break
+        bundle_images = _get_bundle_registries_from_catalog(catalog)
+        invalid_images = _filter_invalid_images(bundle_images, allowed_registries)
+        if invalid_images:
+            yield Fail(
+                f"Invalid bundle image(s) found in {str(catalog)}: "
+                f"{', '.join(invalid_images)}"
+            )

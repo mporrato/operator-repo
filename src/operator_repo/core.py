@@ -625,7 +625,7 @@ class OperatorCatalogList(list[OperatorCatalog]):
     A list of operator catalogs
     """
 
-    def __init__(self, operator_catalogs: list[OperatorCatalog] | None = None):
+    def __init__(self, operator_catalogs: Optional[list[OperatorCatalog]] = None):
         if operator_catalogs is None:
             operator_catalogs = []
         if any(not isinstance(item, OperatorCatalog) for item in operator_catalogs):
