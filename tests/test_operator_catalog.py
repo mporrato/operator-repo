@@ -21,7 +21,7 @@ def test_invalid_catalog(tmp_path: Path) -> None:
 def test_operator_catalog(tmp_path: Path) -> None:
     create_files(
         tmp_path,
-        catalog_files("v4.14", "fake-operator"),
+        catalog_files("v4.14", "fake-operator", content=({"foo": "bar"},)),
         catalog_files("v4.13", "fake-operator-2"),
         bundle_files("fake-operator", "0.0.1"),
     )
