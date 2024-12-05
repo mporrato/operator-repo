@@ -97,13 +97,42 @@ def create_files(path: Union[str, Path], *contents: dict[str, Any]) -> None:
 
 
 def catalog_files(
-    catalog_name: str, operator: str, other_files: Optional[dict[str, Any]] = None
+    catalog_name: str,
+    operator: str,
+    other_files: Optional[dict[str, Any]] = None,
+    content: Optional[tuple[Any, ...]] = None,
 ) -> dict[str, Any]:
-    operator_path = f"catalogs/{catalog_name}/{operator}"
+    """
+    Create a catalog file as a multi-document yaml file.
 
+    Args:
+        catalog_name (str): The name of the catalog.
+        operator (str): The name of the operator.
+        other_files (dict, optional): Additional files to be created.
+            Defaults to None.
+        content (tuple, optional): The content of the catalog.yaml file.
+            Needs to be a tuple, as the create_files() expects a tuple
+            to create multi-document yaml file. Defaults to example catalog
+            content.
+
+    Returns:
+        dict: A dictionary representing the catalog files, merged with other files.
+    """
+    default_content = (
+        {"defaultChannel": "stable", "name": operator, "schema": "olm.package"},
+        {"name": "alpha", "package": operator, "schema": "olm.channel"},
+        {
+            "name": f"{operator}.v1.0.0",
+            "package": operator,
+            "image": f"quay.io/org/{operator}@sha256:123",
+            "schema": "olm.bundle",
+        },
+    )
+    operator_path = f"catalogs/{catalog_name}/{operator}"
+    catalog_content = content or default_content
     return merge(
         {
-            f"{operator_path}/catalog.yaml": {"foo": "bar"},
+            f"{operator_path}/catalog.yaml": catalog_content,
         },
         other_files or {},
     )

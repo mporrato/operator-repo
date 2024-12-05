@@ -4,7 +4,7 @@ from collections.abc import Callable, Iterable
 from inspect import getmembers, isfunction
 from typing import Any, List, Optional, Union
 
-from .. import Bundle, Operator, Repo
+from .. import Bundle, Operator, OperatorCatalogList, Repo
 
 log = logging.getLogger(__name__)
 
@@ -79,8 +79,14 @@ class Fail(CheckResult):
     kind = "failure"
 
 
-SUPPORTED_TYPES = [("operator", Operator), ("bundle", Bundle)]
-Check = Callable[[Union[Repo, Operator, Bundle]], Iterable[CheckResult]]
+SUPPORTED_TYPES = [
+    ("operator", Operator),
+    ("catalog", OperatorCatalogList),
+    ("bundle", Bundle),
+]
+Check = Callable[
+    [Union[Repo, Operator, OperatorCatalogList, Bundle]], Iterable[CheckResult]
+]
 
 
 def get_checks(
