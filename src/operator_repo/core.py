@@ -613,7 +613,7 @@ class OperatorCatalog:
         return self.operator_name < other.operator_name
 
     def __hash__(self) -> int:
-        return hash((self.operator_name,))
+        return hash((self.operator_catalog_name,))
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.operator_catalog_name})"

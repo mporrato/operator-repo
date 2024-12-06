@@ -1,6 +1,6 @@
 [project]
 name = "operator-repo"
-version = "0.4.6"
+version = "0.4.7"
 description = "Library and utilities to handle repositories of kubernetes operators"
 authors = [
     {name = "Maurizio Porrato", email = "mporrato@redhat.com"},
