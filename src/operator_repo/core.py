@@ -600,7 +600,7 @@ class OperatorCatalog:
             return self.operator_catalog_name == other
         if not isinstance(other, self.__class__):
             return False
-        return self.operator_name == other.operator_name
+        return self.operator_catalog_name == other.operator_catalog_name
 
     def __ne__(self, other: Any) -> bool:
         return not self == other
@@ -610,7 +610,7 @@ class OperatorCatalog:
             raise TypeError(
                 f"Can't compare {self.__class__.__name__} to {other.__class__.__name__}"
             )
-        return self.operator_name < other.operator_name
+        return self.operator_catalog_name < other.operator_catalog_name
 
     def __hash__(self) -> int:
         return hash((self.operator_catalog_name,))

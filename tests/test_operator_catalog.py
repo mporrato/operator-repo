@@ -56,22 +56,29 @@ def test_catalog_operator_compare(tmp_path: Path) -> None:
     create_files(
         tmp_path,
         catalog_files("v4.14", "fake-operator"),
-        catalog_files("v4.14", "fake-operator-2"),
+        catalog_files("v4.15", "fake-operator"),
         bundle_files("fake-operator", "0.0.1"),
     )
     repo = Repo(tmp_path)
     catalog = repo.catalog("v4.14")
-    operator1 = catalog.operator_catalog("fake-operator")
-    operator2 = catalog.operator_catalog("fake-operator-2")
+    catalog2 = repo.catalog("v4.15")
+    operator_catalog1 = catalog.operator_catalog("fake-operator")
+    operator_catalog2 = catalog2.operator_catalog("fake-operator")
 
-    assert operator1 == operator1
-    assert operator1 != operator2
-    assert operator1 < operator2
+    assert operator_catalog1 == operator_catalog1
+    assert operator_catalog1 != operator_catalog2
+    assert operator_catalog1 < operator_catalog2
 
-    assert operator1 != "foo"
-    assert operator1 != 42
+    assert len({operator_catalog1, operator_catalog1}) == 1
+    assert len({operator_catalog1, operator_catalog2}) == 2
+
+    assert operator_catalog1 == "v4.14/fake-operator"
+    assert "v4.14/fake-operator" == operator_catalog1
+
+    assert operator_catalog1 != "foo"
+    assert operator_catalog1 != 42
     with pytest.raises(TypeError):
-        operator1 < "foo"
+        operator_catalog1 < "foo"
 
 
 def test_operator_catalog_list(tmp_path: Path) -> None:
