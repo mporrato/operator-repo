@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 
 from operator_repo import OperatorCatalogList, Repo
-from operator_repo.checks.catalog import check_bundle_images_in_fbc
+from operator_repo.checks.operator_catalogs import check_bundle_images_in_fbc
 from tests import bundle_files, catalog_files, create_files
 
 
