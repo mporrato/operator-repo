@@ -32,7 +32,7 @@ def test_get_checks(mock_import_module: MagicMock) -> None:
     assert get_checks("suite.name") == {
         "operator": [check_fake],
         "bundle": [check_fake],
-        "catalog": [check_fake],
+        "operator_catalogs": [check_fake],
     }
     mock_import_module.assert_has_calls(
         [call("suite.name.operator"), call("suite.name.bundle")], any_order=True
@@ -51,7 +51,7 @@ def test_get_checks_skip_check(mock_import_module: MagicMock) -> None:
     assert get_checks("suite.name", skip_tests=["check_ignore"]) == {
         "operator": [check_fake],
         "bundle": [check_fake],
-        "catalog": [check_fake],
+        "operator_catalogs": [check_fake],
     }
     mock_import_module.assert_has_calls(
         [call("suite.name.operator"), call("suite.name.bundle")], any_order=True
@@ -64,7 +64,7 @@ def test_get_checks_missing_modules(mock_import_module: MagicMock) -> None:
     assert get_checks("suite.name") == {
         "operator": [],
         "bundle": [],
-        "catalog": [],
+        "operator_catalogs": [],
     }
     mock_import_module.assert_has_calls(
         [call("suite.name.operator"), call("suite.name.bundle")], any_order=True
