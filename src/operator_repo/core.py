@@ -564,9 +564,7 @@ class OperatorCatalog:
         :return: The operator catalog name combining the catalog name
             and the operator name eg.: 'v4.12/operator-x'
         """
-        return (
-            self._parent.catalog_name + "/" if self._parent else ""
-        ) + self.operator_name
+        return self.catalog.catalog_name + "/" + self.operator_name
 
     @property
     def catalog_content_path(
