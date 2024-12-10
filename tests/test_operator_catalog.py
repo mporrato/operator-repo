@@ -33,6 +33,11 @@ def test_operator_catalog(tmp_path: Path) -> None:
     assert repr(operator_catalog) == "OperatorCatalog(v4.14/fake-operator)"
     assert operator_catalog == "v4.14/fake-operator"
 
+    # create operator catalog directly without Catalog
+    catalog_without_parent = OperatorCatalog(repo.catalog_path("v4.14/fake-operator"))
+    assert catalog_without_parent == operator_catalog
+    assert catalog_without_parent.operator_catalog_name == "v4.14/fake-operator"
+
     assert operator_catalog.repo == repo
     assert operator_catalog.catalog == catalog
 
