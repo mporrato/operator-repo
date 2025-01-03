@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 
-from semver import Version
+from semantic_version import Version
 
 from .. import Bundle
 from ..utils import lookup_dict

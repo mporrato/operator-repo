@@ -9,7 +9,7 @@ from functools import cached_property, total_ordering
 from pathlib import Path
 from typing import Any, Optional, SupportsIndex, Union
 
-from semver import Version
+from semantic_version import NpmSpec, Version
 
 from .exceptions import (
     InvalidBundleException,
@@ -431,6 +431,17 @@ class Operator:
         version_to_bundle = {x.csv_operator_version: x for x in all_bundles_set}
         for bundle in all_bundles_set:
             spec = bundle.csv.get("spec", {})
+            if skip_range := spec.get("skipRange"):
+                for (
+                    bundle_version,
+                    potentially_replaced_bundle,
+                ) in version_to_bundle.items():
+                    if (
+                        Operator._version_in_range(bundle_version, skip_range)
+                        and channel in bundle.channels
+                        and channel in potentially_replaced_bundle.channels
+                    ):
+                        edges.setdefault(potentially_replaced_bundle, set()).add(bundle)
             replaces = spec.get("replaces")
             skips = spec.get("skips", [])
             previous = set(skips) | {replaces}
@@ -454,6 +465,10 @@ class Operator:
                 except KeyError:
                     pass
         return edges
+
+    @staticmethod
+    def _version_in_range(version: str, version_range: str) -> bool:
+        return Version(version) in NpmSpec(version_range)
 
     def update_graph(self, channel: str) -> dict[Bundle, set[Bundle]]:
         """

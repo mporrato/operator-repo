@@ -99,6 +99,11 @@ def test_update_graph(tmp_path: Path) -> None:
             "0.0.4",
             csv={"spec": {"replaces": "hello.v0.0.2", "skips": ["hello.v0.0.3"]}},
         ),
+        bundle_files(
+            "hello",
+            "0.0.5",
+            csv={"spec": {"skipRange": ">=0.0.3 <0.0.5", "replaces": "hello.v0.0.2"}},
+        ),
     )
     repo = Repo(tmp_path)
     operator = repo.operator("hello")
@@ -106,11 +111,13 @@ def test_update_graph(tmp_path: Path) -> None:
     bundle2 = operator.bundle("0.0.2")
     bundle3 = operator.bundle("0.0.3")
     bundle4 = operator.bundle("0.0.4")
-    assert operator.head("beta") == bundle4
+    bundle5 = operator.bundle("0.0.5")
+    assert operator.head("beta") == bundle5
     update = operator.update_graph("beta")
     assert update[bundle1] == {bundle2}
-    assert update[bundle2] == {bundle3, bundle4}
-    assert update[bundle3] == {bundle4}
+    assert update[bundle2] == {bundle3, bundle4, bundle5}
+    assert update[bundle3] == {bundle4, bundle5}
+    assert update[bundle4] == {bundle5}
 
 
 def test_update_graph_invalid_replaces(tmp_path: Path) -> None:
