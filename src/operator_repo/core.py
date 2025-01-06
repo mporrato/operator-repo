@@ -423,25 +423,39 @@ class Operator:
         return None if not channel_bundles else channel_bundles[-1]
 
     @staticmethod
-    def _replaces_graph(
+    def _replaces_graph(  # pylint: disable=too-many-locals
         channel: str, bundles: list[Bundle]
     ) -> dict[Bundle, set[Bundle]]:
         edges: dict[Bundle, set[Bundle]] = {}
         all_bundles_set = set(bundles)
         version_to_bundle = {x.csv_operator_version: x for x in all_bundles_set}
         for bundle in all_bundles_set:
+            # Handle skipRange
+            if (
+                skip_range := bundle.csv.get("metadata", {})
+                .get("annotations", {})
+                .get("olm.skipRange")
+            ):
+                try:
+                    skip_range_parsed = NpmSpec(skip_range)
+                except ValueError:
+                    log.warning("Invalid skipRange: '%s' is ignored.", skip_range)
+                else:
+                    for (
+                        bundle_version,
+                        potentially_replaced_bundle,
+                    ) in version_to_bundle.items():
+                        if (
+                            Version(bundle_version) in skip_range_parsed
+                            and channel in bundle.channels
+                            and channel in potentially_replaced_bundle.channels
+                        ):
+                            edges.setdefault(potentially_replaced_bundle, set()).add(
+                                bundle
+                            )
+
+            # Handle spec
             spec = bundle.csv.get("spec", {})
-            if skip_range := spec.get("skipRange"):
-                for (
-                    bundle_version,
-                    potentially_replaced_bundle,
-                ) in version_to_bundle.items():
-                    if (
-                        Operator._version_in_range(bundle_version, skip_range)
-                        and channel in bundle.channels
-                        and channel in potentially_replaced_bundle.channels
-                    ):
-                        edges.setdefault(potentially_replaced_bundle, set()).add(bundle)
             replaces = spec.get("replaces")
             skips = spec.get("skips", [])
             previous = set(skips) | {replaces}
@@ -465,10 +479,6 @@ class Operator:
                 except KeyError:
                     pass
         return edges
-
-    @staticmethod
-    def _version_in_range(version: str, version_range: str) -> bool:
-        return Version(version) in NpmSpec(version_range)
 
     def update_graph(self, channel: str) -> dict[Bundle, set[Bundle]]:
         """

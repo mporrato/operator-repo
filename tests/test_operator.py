@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -102,7 +103,10 @@ def test_update_graph(tmp_path: Path) -> None:
         bundle_files(
             "hello",
             "0.0.5",
-            csv={"spec": {"skipRange": ">=0.0.3 <0.0.5", "replaces": "hello.v0.0.2"}},
+            csv={
+                "spec": {"replaces": "hello.v0.0.2"},
+                "metadata": {"annotations": {"olm.skipRange": ">=0.0.3 <0.0.5"}},
+            },
         ),
     )
     repo = Repo(tmp_path)
@@ -118,6 +122,32 @@ def test_update_graph(tmp_path: Path) -> None:
     assert update[bundle2] == {bundle3, bundle4, bundle5}
     assert update[bundle3] == {bundle4, bundle5}
     assert update[bundle4] == {bundle5}
+
+
+@patch("operator_repo.core.log")
+def test_update_graph_invalid_skip_range(mock_log: MagicMock, tmp_path: Path) -> None:
+    create_files(
+        tmp_path,
+        bundle_files("hello", "0.0.1"),
+        bundle_files(
+            "hello",
+            "0.0.2",
+            # Range cannot contain the letter 'v', raises ValueError
+            csv={
+                "spec": {"replaces": "hello.v0.0.1"},
+                "metadata": {"annotations": {"olm.skipRange": "<v0.0.2"}},
+            },
+        ),
+    )
+    repo = Repo(tmp_path)
+    operator = repo.operator("hello")
+    bundle1 = operator.bundle("0.0.1")
+    bundle2 = operator.bundle("0.0.2")
+    assert operator.head("beta") == bundle2
+    update = operator.update_graph("beta")
+    # Field 'replaces' works and the code does not fail, but a warning is logged
+    mock_log.warning.assert_called()
+    assert update[bundle1] == {bundle2}
 
 
 def test_update_graph_invalid_replaces(tmp_path: Path) -> None:
