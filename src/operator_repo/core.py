@@ -423,14 +423,16 @@ class Operator:
         return None if not channel_bundles else channel_bundles[-1]
 
     @staticmethod
-    def _replaces_graph(  # pylint: disable=too-many-locals
-        channel: str, bundles: list[Bundle]
+    def _resolve_skip_range(
+        channel: str, all_bundles_set: set[Bundle]
     ) -> dict[Bundle, set[Bundle]]:
+        """
+        Partially resolve the update graph according to field
+        'metadata'.'annotations'.'olm.skipRange'.
+        """
         edges: dict[Bundle, set[Bundle]] = {}
-        all_bundles_set = set(bundles)
         version_to_bundle = {x.csv_operator_version: x for x in all_bundles_set}
         for bundle in all_bundles_set:
-            # Handle skipRange
             if (
                 skip_range := bundle.csv.get("metadata", {})
                 .get("annotations", {})
@@ -453,8 +455,18 @@ class Operator:
                             edges.setdefault(potentially_replaced_bundle, set()).add(
                                 bundle
                             )
+        return edges
 
-            # Handle spec
+    @staticmethod
+    def _replaces_graph(
+        channel: str, bundles: list[Bundle]
+    ) -> dict[Bundle, set[Bundle]]:
+        all_bundles_set = set(bundles)
+        edges: dict[Bundle, set[Bundle]] = Operator._resolve_skip_range(
+            channel, all_bundles_set
+        )
+        version_to_bundle = {x.csv_operator_version: x for x in all_bundles_set}
+        for bundle in all_bundles_set:
             spec = bundle.csv.get("spec", {})
             replaces = spec.get("replaces")
             skips = spec.get("skips", [])
