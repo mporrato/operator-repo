@@ -9,7 +9,7 @@ from functools import cached_property, total_ordering
 from pathlib import Path
 from typing import Any, Optional, SupportsIndex, Union
 
-from semantic_version import NpmSpec, Version
+from semantic_version import NpmSpec, Version  # type: ignore
 
 from .exceptions import (
     InvalidBundleException,
@@ -204,9 +204,9 @@ class Bundle:
         if self.csv_operator_name != other.csv_operator_name:
             return False
         try:
-            return Version.parse(
+            return Version(  # type: ignore
                 self.csv_operator_version.lstrip("v")
-            ) == Version.parse(other.csv_operator_version.lstrip("v"))
+            ) == Version(other.csv_operator_version.lstrip("v"))
         except ValueError:
             log.warning(
                 "Can't compare bundle versions %s and %s as semver: using lexical order instead",
@@ -227,7 +227,7 @@ class Bundle:
         if self.csv_operator_name != other.csv_operator_name:
             return self.csv_operator_name < other.csv_operator_name
         try:
-            return Version.parse(self.csv_operator_version.lstrip("v")) < Version.parse(
+            return Version(self.csv_operator_version.lstrip("v")) < Version(  # type: ignore
                 other.csv_operator_version.lstrip("v")
             )
         except ValueError:
@@ -382,7 +382,7 @@ class Operator:
         try:
             version_channel_pairs: list[tuple[Union[str, Version], str]] = [
                 (
-                    Version.parse(x.csv_operator_version),
+                    Version(x.csv_operator_version),
                     x.default_channel,
                 )
                 for x in self.all_bundles()
