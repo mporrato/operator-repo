@@ -23,6 +23,20 @@ def test_bundle(tmp_path: Path) -> None:
         == "hello"
     )
     assert bundle.dependencies == []
+    assert bundle.release_config == None
+
+
+def test_bundle_with_release_config(tmp_path: Path) -> None:
+    create_files(
+        tmp_path,
+        bundle_files("hello", "0.0.1"),
+        {"operators/hello/0.0.1/release-config.yaml": {"catalogs": []}},
+    )
+    repo = Repo(tmp_path)
+    operator = repo.operator("hello")
+    bundle = operator.bundle("0.0.1")
+
+    assert bundle.release_config == {"catalogs": []}
 
 
 def test_bundle_compare(tmp_path: Path) -> None:
