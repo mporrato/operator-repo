@@ -70,6 +70,16 @@ class Bundle:
             raise InvalidBundleException(f"Invalid CSV contents ({self.csv_file_name})")
         return csv
 
+    @cached_property
+    def release_config(self) -> Any:
+        """
+        :return: The content of the "release-config.yaml" file in the bundle directory
+        """
+        path = self._bundle_path / "release-config.yaml"
+        if not path.is_file():
+            return None
+        return load_yaml(path)
+
     @property
     def metadata_operator_name(self) -> str:
         """
@@ -82,7 +92,7 @@ class Bundle:
     @cached_property
     def csv_full_name(self) -> tuple[str, str]:
         """
-        :return: A tuple containging operator name and bundle version
+        :return: A tuple containing operator name and bundle version
         extracted from the bundle's csv file
         """
         try:
