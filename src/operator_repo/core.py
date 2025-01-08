@@ -9,7 +9,7 @@ from functools import cached_property, total_ordering
 from pathlib import Path
 from typing import Any, Optional, SupportsIndex, Union
 
-from semver import Version
+from semantic_version import NpmSpec, Version  # type: ignore
 
 from .exceptions import (
     InvalidBundleException,
@@ -204,9 +204,9 @@ class Bundle:
         if self.csv_operator_name != other.csv_operator_name:
             return False
         try:
-            return Version.parse(
+            return Version(  # type: ignore
                 self.csv_operator_version.lstrip("v")
-            ) == Version.parse(other.csv_operator_version.lstrip("v"))
+            ) == Version(other.csv_operator_version.lstrip("v"))
         except ValueError:
             log.warning(
                 "Can't compare bundle versions %s and %s as semver: using lexical order instead",
@@ -227,7 +227,7 @@ class Bundle:
         if self.csv_operator_name != other.csv_operator_name:
             return self.csv_operator_name < other.csv_operator_name
         try:
-            return Version.parse(self.csv_operator_version.lstrip("v")) < Version.parse(
+            return Version(self.csv_operator_version.lstrip("v")) < Version(  # type: ignore
                 other.csv_operator_version.lstrip("v")
             )
         except ValueError:
@@ -382,7 +382,7 @@ class Operator:
         try:
             version_channel_pairs: list[tuple[Union[str, Version], str]] = [
                 (
-                    Version.parse(x.csv_operator_version),
+                    Version(x.csv_operator_version),
                     x.default_channel,
                 )
                 for x in self.all_bundles()
@@ -423,11 +423,48 @@ class Operator:
         return None if not channel_bundles else channel_bundles[-1]
 
     @staticmethod
+    def _resolve_skip_range(
+        channel: str, all_bundles_set: set[Bundle]
+    ) -> dict[Bundle, set[Bundle]]:
+        """
+        Partially resolve the update graph according to field
+        'metadata'.'annotations'.'olm.skipRange'.
+        """
+        edges: dict[Bundle, set[Bundle]] = {}
+        version_to_bundle = {x.csv_operator_version: x for x in all_bundles_set}
+        for bundle in all_bundles_set:
+            if (
+                skip_range := bundle.csv.get("metadata", {})
+                .get("annotations", {})
+                .get("olm.skipRange")
+            ):
+                try:
+                    skip_range_parsed = NpmSpec(skip_range)
+                except ValueError:
+                    log.warning("Invalid skipRange: '%s' is ignored.", skip_range)
+                else:
+                    for (
+                        bundle_version,
+                        potentially_replaced_bundle,
+                    ) in version_to_bundle.items():
+                        if (
+                            Version(bundle_version) in skip_range_parsed
+                            and channel in bundle.channels
+                            and channel in potentially_replaced_bundle.channels
+                        ):
+                            edges.setdefault(potentially_replaced_bundle, set()).add(
+                                bundle
+                            )
+        return edges
+
+    @staticmethod
     def _replaces_graph(
         channel: str, bundles: list[Bundle]
     ) -> dict[Bundle, set[Bundle]]:
-        edges: dict[Bundle, set[Bundle]] = {}
         all_bundles_set = set(bundles)
+        edges: dict[Bundle, set[Bundle]] = Operator._resolve_skip_range(
+            channel, all_bundles_set
+        )
         version_to_bundle = {x.csv_operator_version: x for x in all_bundles_set}
         for bundle in all_bundles_set:
             spec = bundle.csv.get("spec", {})

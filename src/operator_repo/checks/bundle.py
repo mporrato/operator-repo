@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 
-from semver import Version
+from semantic_version import Version  # type: ignore
 
 from .. import Bundle
 from ..utils import lookup_dict
@@ -104,13 +104,13 @@ def check_image(bundle: Bundle) -> Iterator[CheckResult]:
 def check_semver(bundle: Bundle) -> Iterator[CheckResult]:
     """Check that the bundle version is semver compliant"""
     try:
-        _ = Version.parse(bundle.operator_version)
+        _ = Version(bundle.operator_version)
     except ValueError:
         yield Warn(
             f"Version from filesystem ({bundle.operator_version}) is not valid semver"
         )
     try:
-        _ = Version.parse(bundle.csv_operator_version)
+        _ = Version(bundle.csv_operator_version)
     except ValueError:
         yield Warn(
             f"Version from CSV ({bundle.csv_operator_version}) is not valid semver"

@@ -1,13 +1,13 @@
 [project]
 name = "operator-repo"
-version = "0.4.9"
+version = "0.4.10"
 description = "Library and utilities to handle repositories of kubernetes operators"
 authors = [
     {name = "Maurizio Porrato", email = "mporrato@redhat.com"},
 ]
 dependencies = [
     "pyyaml>=6.0.1",
-    "semver>=3.0.1",
+    "semantic-version>=2.10.0",
 ]
 requires-python = ">=3.9"
 readme = "README.md"
