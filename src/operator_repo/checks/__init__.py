@@ -1,5 +1,6 @@
 import importlib
 import logging
+import traceback
 from collections.abc import Callable, Iterable
 from inspect import getmembers, isfunction
 from typing import Any, List, Optional, Union
@@ -19,22 +20,25 @@ class CheckResult:
     check: Optional[str]
     origin: Optional[Union[Repo, Operator, Bundle]]
     reason: str
+    suite: Optional[str]
 
     def __init__(
         self,
         reason: str,
         check: Optional[str] = None,
         origin: Optional[Union[Repo, Operator, Bundle]] = None,
+        suite: Optional[str] = None,
     ):
         self.origin = origin
         self.check = check
         self.reason = reason
+        self.suite = suite
 
     def __str__(self) -> str:
         return f"{self.kind}: {self.check}({self.origin}): {self.reason}"
 
     def __repr__(self) -> str:
-        return f"{self.kind}({self.check}, {self.origin}, {self.reason})"
+        return f"{self.kind}({self.suite}, {self.check}, {self.origin}, {self.reason})"
 
     def __int__(self) -> int:
         return self.severity
@@ -42,11 +46,12 @@ class CheckResult:
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, self.__class__):
             return False
-        return (self.kind, self.reason, self.check, self.origin) == (
+        return (self.kind, self.reason, self.check, self.origin, self.suite) == (
             other.kind,
             other.reason,
             other.check,
             other.origin,
+            other.suite,
         )
 
     def __ne__(self, other: Any) -> bool:
@@ -56,7 +61,17 @@ class CheckResult:
         return int(self) < int(other)
 
     def __hash__(self) -> int:
-        return hash((self.kind, self.reason, self.check, self.origin))
+        return hash((self.kind, self.reason, self.check, self.origin, self.suite))
+
+
+class Ok(CheckResult):
+    """
+    A successful check
+    """
+
+    # pylint: disable=too-few-public-methods
+    severity = 0
+    kind = "success"
 
 
 class Warn(CheckResult):
@@ -76,7 +91,7 @@ class Fail(CheckResult):
 
     # pylint: disable=too-few-public-methods
     severity = 90
-    kind = "failure"
+    kind = "error"
 
 
 SUPPORTED_TYPES = [
@@ -120,21 +135,36 @@ def get_checks(
 
 
 def run_check(
-    check: Check, target: Union[Repo, Operator, Bundle]
+    check: Check, target: Union[Repo, Operator, Bundle], suite_name: str
 ) -> Iterable[CheckResult]:
     """
     Run a check against a resource yielding all the problems found
     """
     log.debug("Running %s check on %s", check.__name__, target)
-    for result in check(target):
-        result.check = check.__name__
-        result.origin = target
-        yield result
+    any_results = False
+    try:
+        for result in check(target):
+            any_results = True
+            result.check = check.__name__
+            result.origin = target
+            result.suite = suite_name
+            yield result
+        if not any_results:
+            yield Ok("Success", check=check.__name__, origin=target, suite=suite_name)
+    except Exception:  # pylint: disable=broad-except
+        log.exception("Error running %s check on %s", check.__name__, target)
+        yield Fail(
+            traceback.format_exc(),
+            check=check.__name__,
+            origin=target,
+            suite=suite_name,
+        )
 
 
 def run_suite(
     targets: Iterable[Union[Repo, Operator, Bundle]],
     suite_name: str = "operator_repo.checks",
+    tests: Optional[List[str]] = None,
     skip_tests: Optional[list[str]] = None,
 ) -> Iterable[CheckResult]:
     """
@@ -145,4 +175,6 @@ def run_suite(
         for target_type_name, target_type in SUPPORTED_TYPES:
             if isinstance(target, target_type):
                 for check in checks.get(target_type_name, []):
-                    yield from run_check(check, target)
+                    if tests and check.__name__ not in tests:
+                        continue
+                    yield from run_check(check, target, suite_name)

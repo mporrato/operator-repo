@@ -16,7 +16,7 @@ def test_check_result() -> None:
     assert "foo" in repr(result1)
     assert "bar" in repr(result2)
     assert "warning" in str(result1)
-    assert "failure" in str(result2)
+    assert "error" in str(result2)
     assert {result1, result2, result3} == {result1, result2}
 
 
@@ -75,8 +75,24 @@ def test_run_check(mock_bundle: Bundle) -> None:
     def check_fake(_something):  # type: ignore
         yield Warn("foo")
 
-    assert list(run_check(check_fake, mock_bundle)) == [
-        Warn("foo", "check_fake", mock_bundle)
+    exception = Exception("bar")
+
+    def check_with_exception(_something):  # type: ignore
+        raise exception
+
+    assert list(run_check(check_fake, mock_bundle, "fake-suite")) == [
+        Warn("foo", "check_fake", mock_bundle, "fake-suite")
+    ]
+
+    results = list(run_check(check_with_exception, mock_bundle, "fake-suite"))
+    assert results == [
+        Fail(
+            # Copying the exception message
+            results[0].reason,
+            "check_with_exception",
+            mock_bundle,
+            "fake-suite",
+        )
     ]
 
 
@@ -85,7 +101,20 @@ def test_run_suite(mock_get_checks: MagicMock, mock_bundle: Bundle) -> None:
     def check_fake(_something):  # type: ignore
         yield Warn("foo")
 
-    mock_get_checks.return_value = {"bundle": [check_fake], "operator": []}
-    assert list(run_suite([mock_bundle], "fake.suite")) == [
-        Warn("foo", "check_fake", mock_bundle)
+    def check_fake_err(_something):  # type: ignore
+        yield Fail("foo")
+
+    mock_get_checks.return_value = {
+        "bundle": [check_fake, check_fake_err],
+        "operator": [],
+    }
+    assert sorted(list(run_suite([mock_bundle], "fake.suite"))) == sorted(
+        [
+            Fail("foo", "check_fake_err", mock_bundle, "fake.suite"),
+            Warn("foo", "check_fake", mock_bundle, "fake.suite"),
+        ]
+    )
+
+    assert list(run_suite([mock_bundle], "fake.suite", ["check_fake_err"])) == [
+        Fail("foo", "check_fake_err", mock_bundle, "fake.suite")
     ]

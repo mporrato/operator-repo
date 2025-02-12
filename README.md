@@ -75,17 +75,17 @@ bundle checks:
 
 ```text
 $ optool check etcd/0.9.4
-failure: check_operator_name(Bundle(etcd/0.9.4)): Operator name from annotations.yaml (etcd) does not match the name defined in the CSV (etcdoperator)
+error: check_operator_name(Bundle(etcd/0.9.4)): Operator name from annotations.yaml (etcd) does not match the name defined in the CSV (etcdoperator)
 ```
 
 ```text
 $ optool check -R datadog-operator
-failure: check_image(Bundle(datadog-operator/0.1.3)): container image datadog/operator:v0.1.3 not used by any deployment
-failure: check_image(Bundle(datadog-operator/0.3.1)): container image datadog/operator:0.2.0 not used by any deployment
-failure: check_image(Bundle(datadog-operator/0.3.2)): container image datadog/operator:0.2.0 not used by any deployment
-failure: check_image(Bundle(datadog-operator/0.4.0)): CSV doesn't define .metadata.annotations.containerImage
-failure: check_image(Bundle(datadog-operator/0.5.0)): CSV doesn't define .metadata.annotations.containerImage
-failure: check_image(Bundle(datadog-operator/0.6.0)): CSV doesn't define .metadata.annotations.containerImage
+error: check_image(Bundle(datadog-operator/0.1.3)): container image datadog/operator:v0.1.3 not used by any deployment
+error: check_image(Bundle(datadog-operator/0.3.1)): container image datadog/operator:0.2.0 not used by any deployment
+error: check_image(Bundle(datadog-operator/0.3.2)): container image datadog/operator:0.2.0 not used by any deployment
+error: check_image(Bundle(datadog-operator/0.4.0)): CSV doesn't define .metadata.annotations.containerImage
+error: check_image(Bundle(datadog-operator/0.5.0)): CSV doesn't define .metadata.annotations.containerImage
+error: check_image(Bundle(datadog-operator/0.6.0)): CSV doesn't define .metadata.annotations.containerImage
 ```
 
 ## Creating a custom check suite
