@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-    CLI tool to handle operator repositories
+CLI tool to handle operator repositories
 """
 
 import argparse

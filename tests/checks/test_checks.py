@@ -79,6 +79,20 @@ def test_run_check(mock_bundle: Bundle) -> None:
         Warn("foo", "check_fake", mock_bundle)
     ]
 
+    def check_with_exception(_something):  # type: ignore
+        raise Exception("bar")
+
+    results = list(run_check(check_with_exception, mock_bundle))
+    assert results == [
+        Fail(
+            # Copying the exception message
+            results[0].reason,
+            "check_with_exception",
+            mock_bundle,
+        )
+    ]
+    assert 'Exception("bar")' in results[0].reason
+
 
 @patch("operator_repo.checks.get_checks")
 def test_run_suite(mock_get_checks: MagicMock, mock_bundle: Bundle) -> None:
