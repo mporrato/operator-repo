@@ -1,5 +1,5 @@
 """
-    Definition of Repo, Operator, Bundle, Catalog and CatalogOperator classes
+Definition of Repo, Operator, Bundle, Catalog and CatalogOperator classes
 """
 
 import logging

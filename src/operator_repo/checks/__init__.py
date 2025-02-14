@@ -1,5 +1,6 @@
 import importlib
 import logging
+import traceback
 from collections.abc import Callable, Iterable
 from inspect import getmembers, isfunction
 from typing import Any, List, Optional, Union
@@ -126,10 +127,18 @@ def run_check(
     Run a check against a resource yielding all the problems found
     """
     log.debug("Running %s check on %s", check.__name__, target)
-    for result in check(target):
-        result.check = check.__name__
-        result.origin = target
-        yield result
+    try:
+        for result in check(target):
+            result.check = check.__name__
+            result.origin = target
+            yield result
+    except Exception:  # pylint: disable=broad-except
+        log.exception("Error running %s check on %s", check.__name__, target)
+        yield Fail(
+            traceback.format_exc(),
+            check=check.__name__,
+            origin=target,
+        )
 
 
 def run_suite(
